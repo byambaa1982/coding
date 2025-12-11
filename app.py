@@ -4,7 +4,7 @@
 import os
 from app import create_app
 from app.extensions import db
-from app.models import TutorialUser, Tutorial, PasswordReset
+from app.models import TutorialUser, NewTutorial, Lesson, Exercise, PasswordReset
 
 # Create Flask app
 app = create_app(os.getenv('FLASK_ENV') or 'development')
@@ -16,7 +16,9 @@ def make_shell_context():
     return {
         'db': db,
         'TutorialUser': TutorialUser,
-        'Tutorial': Tutorial,
+        'NewTutorial': NewTutorial,
+        'Lesson': Lesson,
+        'Exercise': Exercise,
         'PasswordReset': PasswordReset
     }
 

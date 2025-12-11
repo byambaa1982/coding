@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tutorial.title }} - Tutorial Platform{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50">
+    <!-- Hero Section -->
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-12">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2">
+                    <!-- Course Type Badge -->
+                    <div class="mb-4">
+                        {% if tutorial.course_type == 'python' %}
+                        <span class="inline-block px-4 py-2 bg-yellow-500 text-white font-bold rounded-full">
+                            <i class="fab fa-python mr-2"></i> PYTHON COURSE
+                        </span>
+                        {% else %}
+                        <span class="inline-block px-4 py-2 bg-indigo-500 text-white font-bold rounded-full">
+                            <i class="fas fa-database mr-2"></i> SQL COURSE
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <h1 class="text-4xl font-bold mb-4">{{ tutorial.title }}</h1>
+                    <p class="text-xl text-blue-100 mb-6">{{ tutorial.short_description }}</p>
+
+                    <div class="flex flex-wrap gap-4 text-sm">
+                        <span class="flex items-center">
+                            <i class="fas fa-signal mr-2"></i>
+                            {{ tutorial.difficulty_level|capitalize }}
+                        </span>
+                        <span class="flex items-center">
+                            <i class="fas fa-book-open mr-2"></i>
+                            {{ tutorial.total_lessons }} lessons
+                        </span>
+                        {% if tutorial.estimated_duration_hours %}
+                        <span class="flex items-center">
+                            <i class="fas fa-clock mr-2"></i>
+                            {{ tutorial.estimated_duration_hours }} hours
+                        </span>
+                        {% endif %}
+                        <span class="flex items-center">
+                            <i class="fas fa-folder mr-2"></i>
+                            {{ tutorial.category }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Purchase Card (Sticky on Desktop) -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-lg shadow-lg p-6 text-gray-900">
+                        {% if tutorial.preview_video_url %}
+                        <div class="mb-4 rounded-lg overflow-hidden bg-gray-200 aspect-video">
+                            <iframe src="{{ tutorial.preview_video_url }}" class="w-full h-full" allowfullscreen></iframe>
+                        </div>
+                        {% endif %}
+
+                        <div class="mb-6">
+                            {% if tutorial.is_free %}
+                            <div class="text-3xl font-bold text-green-600 mb-2">FREE</div>
+                            {% else %}
+                            <div class="text-3xl font-bold text-blue-600 mb-2">${{ "%.2f"|format(tutorial.price) }}</div>
+                            {% endif %}
+                        </div>
+
+                        {% if current_user.is_authenticated %}
+                        <button class="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-semibold mb-3">
+                            <i class="fas fa-shopping-cart mr-2"></i> Enroll Now
+                        </button>
+                        {% else %}
+                        <a href="{{ url_for('auth.login') }}" class="block w-full bg-blue-600 text-center text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-semibold mb-3">
+                            <i class="fas fa-sign-in-alt mr-2"></i> Login to Enroll
+                        </a>
+                        {% endif %}
+
+                        <button class="w-full border-2 border-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-50 transition">
+                            <i class="far fa-heart mr-2"></i> Add to Wishlist
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Course Content -->
+    <div class="container mx-auto px-4 py-12">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Main Content -->
+            <div class="lg:col-span-2">
+                <!-- Description -->
+                <div class="bg-white rounded-lg shadow p-8 mb-6">
+                    <h2 class="text-2xl font-bold mb-4">About This Course</h2>
+                    <div class="prose max-w-none text-gray-700">
+                        {{ tutorial.description|safe }}
+                    </div>
+                </div>
+
+                <!-- Curriculum -->
+                <div class="bg-white rounded-lg shadow p-8">
+                    <h2 class="text-2xl font-bold mb-6">Course Curriculum</h2>
+                    
+                    {% if sections %}
+                    <div class="space-y-4">
+                        {% for section_name, section_lessons in sections.items() %}
+                        <div class="border border-gray-200 rounded-lg overflow-hidden">
+                            <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                                <h3 class="font-bold text-lg text-gray-900">{{ section_name }}</h3>
+                                <p class="text-sm text-gray-600">{{ section_lessons|length }} lessons</p>
+                            </div>
+                            <div class="divide-y divide-gray-200">
+                                {% for lesson in section_lessons %}
+                                <div class="px-6 py-4 hover:bg-gray-50 transition">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center flex-1">
+                                            <div class="mr-4 text-gray-400">
+                                                {% if lesson.content_type == 'video' %}
+                                                <i class="fas fa-play-circle text-xl"></i>
+                                                {% elif lesson.content_type == 'quiz' %}
+                                                <i class="fas fa-question-circle text-xl"></i>
+                                                {% else %}
+                                                <i class="fas fa-file-alt text-xl"></i>
+                                                {% endif %}
+                                            </div>
+                                            <div class="flex-1">
+                                                <h4 class="font-medium text-gray-900">{{ lesson.title }}</h4>
+                                                {% if lesson.description %}
+                                                <p class="text-sm text-gray-600">{{ lesson.description[:100] }}</p>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="text-sm text-gray-500 ml-4">
+                                            {% if lesson.is_free_preview %}
+                                            <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                                                <i class="fas fa-unlock mr-1"></i> Preview
+                                            </span>
+                                            {% elif lesson.estimated_duration_minutes %}
+                                            {{ lesson.estimated_duration_minutes }} min
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-gray-500 text-center py-8">Course curriculum is being developed</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="lg:col-span-1">
+                <!-- What You'll Learn -->
+                <div class="bg-white rounded-lg shadow p-6 mb-6">
+                    <h3 class="text-xl font-bold mb-4">What You'll Learn</h3>
+                    <ul class="space-y-3">
+                        {% if tutorial.course_type == 'python' %}
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                            <span class="text-gray-700">Master Python programming fundamentals</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                            <span class="text-gray-700">Practice with interactive coding exercises</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                            <span class="text-gray-700">Build real-world Python projects</span>
+                        </li>
+                        {% else %}
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                            <span class="text-gray-700">Master SQL query writing</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                            <span class="text-gray-700">Practice with real database scenarios</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                            <span class="text-gray-700">Optimize database queries</span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <!-- Instructor -->
+                <div class="bg-white rounded-lg shadow p-6 mb-6">
+                    <h3 class="text-xl font-bold mb-4">Instructor</h3>
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-gray-300 rounded-full mr-3"></div>
+                        <div>
+                            <p class="font-semibold">{{ tutorial.instructor.full_name or tutorial.instructor.username }}</p>
+                            <p class="text-sm text-gray-600">Course Instructor</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Related Courses -->
+                {% if related %}
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-xl font-bold mb-4">Related Courses</h3>
+                    <div class="space-y-4">
+                        {% for course in related %}
+                        <a href="{{ url_for('catalog.course_detail', slug=course.slug) }}" class="block hover:bg-gray-50 p-3 rounded-lg transition">
+                            <h4 class="font-medium text-gray-900 mb-1">{{ course.title }}</h4>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">{{ course.difficulty_level }}</span>
+                                {% if course.is_free %}
+                                <span class="text-green-600 font-semibold">Free</span>
+                                {% else %}
+                                <span class="text-blue-600 font-semibold">${{ "%.2f"|format(course.price) }}</span>
+                                {% endif %}
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

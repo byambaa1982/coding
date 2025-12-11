@@ -24,12 +24,14 @@
                     </div>
                 </div>
                 <div class="welcome-actions">
-                    <a href="#" class="btn btn-primary btn-lg">
-                        <i class="fas fa-book-open"></i> My Courses
+                    <a href="{{ url_for('catalog.index') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-book-open"></i> Browse Courses
                     </a>
-                    <a href="#" class="btn btn-secondary btn-lg">
-                        <i class="fas fa-search"></i> Browse Catalog
+                    {% if current_user.is_admin %}
+                    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary btn-lg">
+                        <i class="fas fa-cog"></i> Admin Panel
                     </a>
+                    {% endif %}
                 </div>
             </div>
         {% else %}
@@ -37,8 +39,8 @@
                 <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">
                     <i class="fas fa-user-plus"></i> Get Started Free
                 </a>
-                <a href="{{ url_for('auth.login') }}" class="btn btn-outline btn-lg">
-                    <i class="fas fa-sign-in-alt"></i> Login
+                <a href="{{ url_for('catalog.index') }}" class="btn btn-secondary btn-lg">
+                    <i class="fas fa-book"></i> Browse Courses
                 </a>
             </div>
         {% endif %}

@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Tutorial Platform{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
+        <p class="text-gray-600">Manage courses, lessons, and content</p>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600">Total Courses</p>
+                    <p class="text-3xl font-bold text-gray-900">{{ total_tutorials }}</p>
+                </div>
+                <div class="bg-blue-100 rounded-full p-3">
+                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4 text-sm text-gray-600">
+                Python: {{ python_tutorials }} | SQL: {{ sql_tutorials }}
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600">Published</p>
+                    <p class="text-3xl font-bold text-green-600">{{ published_tutorials }}</p>
+                </div>
+                <div class="bg-green-100 rounded-full p-3">
+                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600">Total Lessons</p>
+                    <p class="text-3xl font-bold text-purple-600">{{ total_lessons }}</p>
+                </div>
+                <div class="bg-purple-100 rounded-full p-3">
+                    <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600">Total Users</p>
+                    <p class="text-3xl font-bold text-orange-600">{{ total_users }}</p>
+                </div>
+                <div class="bg-orange-100 rounded-full p-3">
+                    <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-bold mb-4">Quick Actions</h2>
+            <div class="space-y-3">
+                <a href="{{ url_for('admin.course_create') }}" class="block px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    <i class="fas fa-plus mr-2"></i> Create New Course
+                </a>
+                <a href="{{ url_for('admin.courses_list') }}" class="block px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                    <i class="fas fa-list mr-2"></i> View All Courses
+                </a>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-bold mb-4">Filter Courses</h2>
+            <div class="space-y-3">
+                <a href="{{ url_for('admin.courses_list', type='python') }}" class="block px-4 py-3 bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100 transition">
+                    <i class="fab fa-python mr-2"></i> Python Courses ({{ python_tutorials }})
+                </a>
+                <a href="{{ url_for('admin.courses_list', type='sql') }}" class="block px-4 py-3 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition">
+                    <i class="fas fa-database mr-2"></i> SQL Courses ({{ sql_tutorials }})
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Courses -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-bold">Recent Courses</h2>
+        </div>
+        <div class="p-6">
+            {% if recent_tutorials %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                        <tr class="border-b border-gray-200">
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Title</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Type</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Status</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Price</th>
+                            <th class="text-right py-3 px-4 text-sm font-semibold text-gray-600">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tutorial in recent_tutorials %}
+                        <tr class="border-b border-gray-100 hover:bg-gray-50">
+                            <td class="py-3 px-4">
+                                <div class="font-medium text-gray-900">{{ tutorial.title }}</div>
+                                <div class="text-sm text-gray-500">{{ tutorial.category }}</div>
+                            </td>
+                            <td class="py-3 px-4">
+                                {% if tutorial.course_type == 'python' %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    <i class="fab fa-python mr-1"></i> Python
+                                </span>
+                                {% else %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800">
+                                    <i class="fas fa-database mr-1"></i> SQL
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 px-4">
+                                {% if tutorial.status == 'published' %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Published</span>
+                                {% elif tutorial.status == 'draft' %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Draft</span>
+                                {% else %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Archived</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 px-4">
+                                {% if tutorial.is_free %}
+                                <span class="text-green-600 font-semibold">Free</span>
+                                {% else %}
+                                ${{ "%.2f"|format(tutorial.price) }}
+                                {% endif %}
+                            </td>
+                            <td class="py-3 px-4 text-right">
+                                <a href="{{ url_for('admin.course_edit', course_id=tutorial.id) }}" class="text-blue-600 hover:text-blue-800 mr-3">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{{ url_for('catalog.course_detail', slug=tutorial.slug) }}" class="text-gray-600 hover:text-gray-800" target="_blank">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-gray-500 text-center py-8">No courses yet. <a href="{{ url_for('admin.course_create') }}" class="text-blue-600 hover:underline">Create your first course</a></p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

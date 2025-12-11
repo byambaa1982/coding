@@ -35,15 +35,20 @@
                         <a href="{{ url_for('main.index') }}" class="nav-link {% if request.endpoint == 'main.index' %}active{% endif %}">
                             <i class="fas fa-home"></i> Home
                         </a>
-                        <a href="{{ url_for('main.about') }}" class="nav-link {% if request.endpoint == 'main.about' %}active{% endif %}">
-                            <i class="fas fa-info-circle"></i> About
+                        <a href="{{ url_for('catalog.index') }}" class="nav-link {% if request.endpoint and 'catalog' in request.endpoint %}active{% endif %}">
+                            <i class="fas fa-book"></i> Courses
                         </a>
-                        <a href="#" class="nav-link">
+                        <a href="{{ url_for('catalog.python_courses') }}" class="nav-link">
                             <i class="fab fa-python"></i> Python
                         </a>
-                        <a href="#" class="nav-link">
+                        <a href="{{ url_for('catalog.sql_courses') }}" class="nav-link">
                             <i class="fas fa-database"></i> SQL
                         </a>
+                        {% if current_user.is_authenticated and current_user.is_admin %}
+                        <a href="{{ url_for('admin.dashboard') }}" class="nav-link {% if request.endpoint and 'admin' in request.endpoint %}active{% endif %}">
+                            <i class="fas fa-cog"></i> Admin
+                        </a>
+                        {% endif %}
                     </div>
                 </div>
                 

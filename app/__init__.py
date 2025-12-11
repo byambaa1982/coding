@@ -39,9 +39,13 @@ def create_app(config_name='development'):
     # Register blueprints
     from app.auth import auth_bp
     from app.main import main_bp
+    from app.admin import admin_bp
+    from app.catalog import catalog_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(main_bp)
+    app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(catalog_bp, url_prefix='/catalog')
     
     # Error handlers
     @app.errorhandler(404)

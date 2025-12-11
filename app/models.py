@@ -86,10 +86,10 @@ class TutorialUser(UserMixin, db.Model):
         return str(self.id)
 
 
-class Tutorial(db.Model):
-    """Tutorial/Course model."""
+class NewTutorial(db.Model):
+    """Tutorial/Course model - New table for Phase 2."""
     
-    __tablename__ = 'tutorials'
+    __tablename__ = 'new_tutorials'
     
     id = db.Column(db.Integer, primary_key=True)
     uuid = db.Column(db.String(36), unique=True, nullable=False, 
@@ -109,6 +109,7 @@ class Tutorial(db.Model):
     language = db.Column(db.String(50), default='en')
     
     # Categorization
+    course_type = db.Column(db.String(50), nullable=False, default='python', index=True)  # 'python' or 'sql'
     category = db.Column(db.String(100), nullable=False, index=True)
     tags = db.Column(db.Text, nullable=True)  # JSON string
     
@@ -135,7 +136,7 @@ class Tutorial(db.Model):
     instructor = db.relationship('TutorialUser', backref='tutorials_created')
     
     def __repr__(self):
-        return f'<Tutorial {self.title}>'
+        return f'<NewTutorial {self.title}>'
 
 
 class PasswordReset(db.Model):
@@ -158,3 +159,85 @@ class PasswordReset(db.Model):
     
     def __repr__(self):
         return f'<PasswordReset {self.token}>'
+
+
+class Lesson(db.Model):
+    """Lesson model for tutorials."""
+    
+    __tablename__ = 'lessons'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    tutorial_id = db.Column(db.Integer, db.ForeignKey('new_tutorials.id'), nullable=False)
+    
+    # Lesson info
+    title = db.Column(db.String(300), nullable=False)
+    slug = db.Column(db.String(350), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    
+    # Content
+    content_type = db.Column(db.String(20), nullable=False, default='text')  # 'text', 'video', 'quiz'
+    content = db.Column(db.Text, nullable=True)  # Text content or video URL
+    video_url = db.Column(db.String(500), nullable=True)
+    video_duration_seconds = db.Column(db.Integer, nullable=True)
+    
+    # Organization
+    section_name = db.Column(db.String(200), nullable=True)  # For grouping lessons
+    order_index = db.Column(db.Integer, nullable=False, default=0)
+    
+    # Metadata
+    is_free_preview = db.Column(db.Boolean, default=False)
+    estimated_duration_minutes = db.Column(db.Integer, nullable=True)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    tutorial = db.relationship('NewTutorial', backref=db.backref('lessons', lazy='dynamic', order_by='Lesson.order_index'))
+    
+    def __repr__(self):
+        return f'<Lesson {self.title}>'
+
+
+class Exercise(db.Model):
+    """Exercise model for practice problems."""
+    
+    __tablename__ = 'exercises'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    tutorial_id = db.Column(db.Integer, db.ForeignKey('new_tutorials.id'), nullable=False)
+    lesson_id = db.Column(db.Integer, db.ForeignKey('lessons.id'), nullable=True)
+    
+    # Exercise info
+    title = db.Column(db.String(300), nullable=False)
+    slug = db.Column(db.String(350), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    
+    # Exercise type and content
+    exercise_type = db.Column(db.String(20), nullable=False, index=True)  # 'python', 'sql'
+    difficulty = db.Column(db.String(20), nullable=False, default='easy')  # 'easy', 'medium', 'hard'
+    
+    # Code/Query setup
+    starter_code = db.Column(db.Text, nullable=True)
+    solution_code = db.Column(db.Text, nullable=True)
+    test_cases = db.Column(db.Text, nullable=True)  # JSON string
+    hints = db.Column(db.Text, nullable=True)  # JSON array
+    
+    # SQL-specific
+    database_schema = db.Column(db.Text, nullable=True)  # DDL for SQL exercises
+    sample_data = db.Column(db.Text, nullable=True)  # INSERT statements
+    
+    # Organization
+    order_index = db.Column(db.Integer, nullable=False, default=0)
+    points = db.Column(db.Integer, default=10)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    tutorial = db.relationship('NewTutorial', backref=db.backref('exercises', lazy='dynamic'))
+    lesson = db.relationship('Lesson', backref=db.backref('exercises', lazy='dynamic'))
+    
+    def __repr__(self):
+        return f'<Exercise {self.title}>'

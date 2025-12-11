@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Course Management - Admin{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Course Management</h1>
+            <p class="text-gray-600 mt-1">{{ tutorials.total }} total courses</p>
+        </div>
+        <a href="{{ url_for('admin.course_create') }}" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
+            <i class="fas fa-plus mr-2"></i> Create New Course
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-lg shadow p-4 mb-6">
+        <div class="flex flex-wrap gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Course Type</label>
+                <div class="flex gap-2">
+                    <a href="{{ url_for('admin.courses_list') }}" class="px-4 py-2 rounded {% if not current_type %}bg-blue-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">All</a>
+                    <a href="{{ url_for('admin.courses_list', type='python') }}" class="px-4 py-2 rounded {% if current_type == 'python' %}bg-blue-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">Python</a>
+                    <a href="{{ url_for('admin.courses_list', type='sql') }}" class="px-4 py-2 rounded {% if current_type == 'sql' %}bg-blue-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">SQL</a>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <div class="flex gap-2">
+                    <a href="{{ url_for('admin.courses_list', type=current_type) if current_type else url_for('admin.courses_list') }}" class="px-4 py-2 rounded {% if not current_status %}bg-blue-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">All</a>
+                    <a href="{{ url_for('admin.courses_list', type=current_type, status='draft') }}" class="px-4 py-2 rounded {% if current_status == 'draft' %}bg-blue-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">Draft</a>
+                    <a href="{{ url_for('admin.courses_list', type=current_type, status='published') }}" class="px-4 py-2 rounded {% if current_status == 'published' %}bg-blue-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">Published</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Courses List -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        {% if tutorials.items %}
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lessons</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for tutorial in tutorials.items %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center">
+                            {% if tutorial.thumbnail_url %}
+                            <img src="{{ tutorial.thumbnail_url }}" alt="{{ tutorial.title }}" class="w-16 h-16 rounded object-cover mr-4">
+                            {% else %}
+                            <div class="w-16 h-16 bg-gray-200 rounded flex items-center justify-center mr-4">
+                                <i class="fas fa-book text-gray-400 text-2xl"></i>
+                            </div>
+                            {% endif %}
+                            <div>
+                                <div class="text-sm font-medium text-gray-900">{{ tutorial.title }}</div>
+                                <div class="text-sm text-gray-500">{{ tutorial.category }} - {{ tutorial.difficulty_level }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if tutorial.course_type == 'python' %}
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                            <i class="fab fa-python mr-1"></i> Python
+                        </span>
+                        {% else %}
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800">
+                            <i class="fas fa-database mr-1"></i> SQL
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if tutorial.status == 'published' %}
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Published</span>
+                        {% elif tutorial.status == 'draft' %}
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Draft</span>
+                        {% else %}
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Archived</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {% if tutorial.is_free %}
+                        <span class="text-green-600 font-semibold">Free</span>
+                        {% else %}
+                        ${{ "%.2f"|format(tutorial.price) }}
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ tutorial.total_lessons }} lessons
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
+                        <a href="{{ url_for('admin.course_edit', course_id=tutorial.id) }}" class="text-blue-600 hover:text-blue-900" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="{{ url_for('catalog.course_detail', slug=tutorial.slug) }}" class="text-green-600 hover:text-green-900" target="_blank" title="View">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <form method="POST" action="{{ url_for('admin.course_delete', course_id=tutorial.id) }}" class="inline" onsubmit="return confirm('Are you sure you want to delete this course?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <button type="submit" class="text-red-600 hover:text-red-900" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Pagination -->
+        {% if tutorials.pages > 1 %}
+        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+                {% if tutorials.has_prev %}
+                <a href="{{ url_for('admin.courses_list', page=tutorials.prev_num, type=current_type, status=current_status) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Previous</a>
+                {% endif %}
+                {% if tutorials.has_next %}
+                <a href="{{ url_for('admin.courses_list', page=tutorials.next_num, type=current_type, status=current_status) }}" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Next</a>
+                {% endif %}
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        Showing <span class="font-medium">{{ (tutorials.page - 1) * tutorials.per_page + 1 }}</span> to <span class="font-medium">{{ min(tutorials.page * tutorials.per_page, tutorials.total) }}</span> of <span class="font-medium">{{ tutorials.total }}</span> results
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        {% for page_num in tutorials.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                            {% if page_num %}
+                                <a href="{{ url_for('admin.courses_list', page=page_num, type=current_type, status=current_status) }}" class="{% if page_num == tutorials.page %}z-10 bg-blue-50 border-blue-500 text-blue-600{% else %}bg-white border-gray-300 text-gray-500 hover:bg-gray-50{% endif %} relative inline-flex items-center px-4 py-2 border text-sm font-medium">{{ page_num }}</a>
+                            {% else %}
+                                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>
+                            {% endif %}
+                        {% endfor %}
+                    </nav>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="text-center py-12">
+            <i class="fas fa-book text-gray-300 text-5xl mb-4"></i>
+            <p class="text-gray-500 text-lg mb-4">No courses found</p>
+            <a href="{{ url_for('admin.course_create') }}" class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
+                <i class="fas fa-plus mr-2"></i> Create Your First Course
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

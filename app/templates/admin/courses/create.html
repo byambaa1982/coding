@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Create New Course - Admin{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Create New Course</h1>
+        <p class="text-gray-600">Add a new Python or SQL course to the platform</p>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+        <form method="POST" action="{{ url_for('admin.course_create') }}">
+            {{ form.hidden_tag() }}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- Title -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.title.label }}</label>
+                    {{ form.title(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                    {% if form.title.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.title.errors[0] }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Slug -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.slug.label }}</label>
+                    {{ form.slug(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                    {% if form.slug.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.slug.errors[0] }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-sm text-gray-500">URL-friendly version (e.g., python-for-beginners)</p>
+                </div>
+
+                <!-- Course Type -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.course_type.label }}</label>
+                    {{ form.course_type(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                    {% if form.course_type.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.course_type.errors[0] }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Category -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.category.label }}</label>
+                    {{ form.category(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent", placeholder="e.g., Programming, Database") }}
+                    {% if form.category.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.category.errors[0] }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Difficulty Level -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.difficulty_level.label }}</label>
+                    {{ form.difficulty_level(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                    {% if form.difficulty_level.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.difficulty_level.errors[0] }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Price -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.price.label }}</label>
+                    {{ form.price(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent", placeholder="29.99") }}
+                    {% if form.price.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.price.errors[0] }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Short Description -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.short_description.label }}</label>
+                    {{ form.short_description(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent", rows="2") }}
+                    {% if form.short_description.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.short_description.errors[0] }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-sm text-gray-500">Brief description (max 500 characters)</p>
+                </div>
+
+                <!-- Full Description -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.description.label }}</label>
+                    {{ form.description(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent", rows="6") }}
+                    {% if form.description.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.description.errors[0] }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Thumbnail URL -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.thumbnail_url.label }}</label>
+                    {{ form.thumbnail_url(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                    {% if form.thumbnail_url.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.thumbnail_url.errors[0] }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Preview Video URL -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.preview_video_url.label }}</label>
+                    {{ form.preview_video_url(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                    {% if form.preview_video_url.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.preview_video_url.errors[0] }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Tags -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.tags.label }}</label>
+                    {{ form.tags(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent", placeholder="python, beginners, programming") }}
+                    {% if form.tags.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.tags.errors[0] }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Estimated Duration -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.estimated_duration_hours.label }}</label>
+                    {{ form.estimated_duration_hours(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent", placeholder="10.5") }}
+                    {% if form.estimated_duration_hours.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.estimated_duration_hours.errors[0] }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Status -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.status.label }}</label>
+                    {{ form.status(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                    {% if form.status.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.status.errors[0] }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Checkboxes -->
+                <div class="md:col-span-2 space-y-3">
+                    <div class="flex items-center">
+                        {{ form.is_free(class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded") }}
+                        <label class="ml-2 block text-sm text-gray-700">{{ form.is_free.label }}</label>
+                    </div>
+                    <div class="flex items-center">
+                        {{ form.is_featured(class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded") }}
+                        <label class="ml-2 block text-sm text-gray-700">{{ form.is_featured.label }}</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                <a href="{{ url_for('admin.courses_list') }}" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                    Cancel
+                </a>
+                <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    <i class="fas fa-save mr-2"></i> Create Course
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
