@@ -43,6 +43,7 @@ def create_app(config_name='development'):
     from app.catalog import catalog_bp
     from app.payment import payment_bp
     from app.account import account_bp
+    from app.learning import learning_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(main_bp)
@@ -50,6 +51,20 @@ def create_app(config_name='development'):
     app.register_blueprint(catalog_bp, url_prefix='/catalog')
     app.register_blueprint(payment_bp, url_prefix='/payment')
     app.register_blueprint(account_bp, url_prefix='/account')
+    app.register_blueprint(learning_bp, url_prefix='/learn')
+    
+    # Custom Jinja2 filters
+    import json
+    
+    @app.template_filter('from_json')
+    def from_json_filter(value):
+        """Parse JSON string to Python object."""
+        if value:
+            try:
+                return json.loads(value)
+            except:
+                return []
+        return []
     
     # Error handlers
     @app.errorhandler(404)

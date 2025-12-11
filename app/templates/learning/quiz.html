@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}{{ quiz.title }} - Quiz{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h1 class="text-3xl font-bold mb-2">{{ quiz.title }}</h1>
+        {% if quiz.description %}
+        <p class="text-gray-700 mb-4">{{ quiz.description }}</p>
+        {% endif %}
+        
+        <div class="flex items-center space-x-6 text-sm text-gray-600">
+            <span>📝 {{ questions|length }} questions</span>
+            {% if quiz.time_limit_minutes %}
+            <span>⏱️ {{ quiz.time_limit_minutes }} minutes</span>
+            {% endif %}
+            <span>✅ Pass: {{ quiz.passing_score }}%</span>
+            <span>🔄 Attempt {{ attempt.attempt_number }}/{{ quiz.max_attempts if quiz.max_attempts else '∞' }}</span>
+        </div>
+    </div>
+
+    <!-- Quiz Form -->
+    <form method="POST" action="{{ url_for('learning.submit_quiz', quiz_id=quiz.id) }}" id="quizForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        {% for question in questions %}
+        <div class="bg-white rounded-lg shadow-md p-6 mb-4">
+            <div class="flex items-start mb-4">
+                <span class="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold mr-3">
+                    {{ loop.index }}
+                </span>
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold mb-3">{{ question.question_text }}</h3>
+                    
+                    {% if question.question_type == 'multiple_choice' %}
+                        {% set options = question.options|from_json %}
+                        <div class="space-y-2">
+                            {% for option in options %}
+                            <label class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition">
+                                <input type="radio" name="question_{{ question.id }}" value="{{ option.id }}" 
+                                       {% if existing_answers.get(question.id) == option.id %}checked{% endif %}
+                                       class="mr-3 w-4 h-4 text-blue-600">
+                                <span>{{ option.text }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    
+                    {% elif question.question_type == 'true_false' %}
+                        <div class="space-y-2">
+                            <label class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition">
+                                <input type="radio" name="question_{{ question.id }}" value="true" 
+                                       {% if existing_answers.get(question.id) == 'true' %}checked{% endif %}
+                                       class="mr-3 w-4 h-4 text-blue-600">
+                                <span>True</span>
+                            </label>
+                            <label class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition">
+                                <input type="radio" name="question_{{ question.id }}" value="false" 
+                                       {% if existing_answers.get(question.id) == 'false' %}checked{% endif %}
+                                       class="mr-3 w-4 h-4 text-blue-600">
+                                <span>False</span>
+                            </label>
+                        </div>
+                    
+                    {% elif question.question_type == 'text' %}
+                        <input type="text" name="question_{{ question.id }}" 
+                               value="{{ existing_answers.get(question.id, '') }}"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="Enter your answer">
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Submit Button -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex justify-between items-center">
+                <a href="{{ url_for('learning.view_lesson', lesson_id=lesson.id) }}" 
+                   class="px-4 py-2 text-gray-700 hover:text-gray-900 transition">
+                    ← Back to Lesson
+                </a>
+                <button type="submit" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold">
+                    Submit Quiz
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+// Add timer if time limit exists
+{% if quiz.time_limit_minutes %}
+const timeLimit = {{ quiz.time_limit_minutes }} * 60; // Convert to seconds
+const startTime = new Date('{{ attempt.started_at }}').getTime();
+const now = Date.now();
+const elapsed = Math.floor((now - startTime) / 1000);
+let remaining = Math.max(0, timeLimit - elapsed);
+
+if (remaining > 0) {
+    const timerInterval = setInterval(() => {
+        remaining--;
+        
+        const minutes = Math.floor(remaining / 60);
+        const seconds = remaining % 60;
+        
+        // Display timer (you could add a timer element to show this)
+        document.title = `${minutes}:${seconds.toString().padStart(2, '0')} - {{ quiz.title }}`;
+        
+        if (remaining <= 0) {
+            clearInterval(timerInterval);
+            alert('Time is up! Submitting quiz...');
+            document.getElementById('quizForm').submit();
+        }
+    }, 1000);
+} else {
+    // Time already expired
+    alert('Time limit exceeded! Submitting quiz...');
+    document.getElementById('quizForm').submit();
+}
+{% endif %}
+</script>
+{% endblock %}
