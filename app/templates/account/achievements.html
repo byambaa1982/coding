@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Achievements - {{ config.APP_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold mb-2">🏆 Achievements</h1>
+        <p class="text-gray-600">Track your learning milestones and unlock badges</p>
+    </div>
+
+    <!-- Achievement Stats -->
+    <div class="bg-gradient-to-r from-purple-500 to-indigo-600 rounded-lg shadow-lg p-8 mb-8 text-white">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="text-center">
+                <p class="text-4xl font-bold mb-2">{{ stats.unlocked_achievements }}</p>
+                <p class="text-purple-100">Unlocked</p>
+            </div>
+            <div class="text-center">
+                <p class="text-4xl font-bold mb-2">{{ stats.locked_achievements }}</p>
+                <p class="text-purple-100">Locked</p>
+            </div>
+            <div class="text-center">
+                <p class="text-4xl font-bold mb-2">{{ stats.completion_percentage }}%</p>
+                <p class="text-purple-100">Completion</p>
+            </div>
+            <div class="text-center">
+                <p class="text-4xl font-bold mb-2">{{ stats.total_points }}</p>
+                <p class="text-purple-100">Points Earned</p>
+            </div>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div class="mt-6">
+            <div class="bg-white bg-opacity-20 rounded-full h-4">
+                <div class="bg-white h-4 rounded-full transition-all duration-500" 
+                     style="width: {{ stats.completion_percentage }}%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Refresh Button -->
+    <div class="mb-6 text-right">
+        <form method="POST" action="{{ url_for('account.refresh_achievements') }}" class="inline">
+            <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                <i class="fas fa-sync-alt mr-2"></i>Check for New Achievements
+            </button>
+        </form>
+    </div>
+
+    <!-- Achievement Categories -->
+    {% for category, category_achievements in achievements.items() %}
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold mb-4 capitalize">
+            {% if category == 'learning' %}📚 Learning{% endif %}
+            {% if category == 'mastery' %}🎯 Mastery{% endif %}
+            {% if category == 'social' %}👥 Social{% endif %}
+            {% if category == 'other' %}✨ Other{% endif %}
+        </h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for achievement_data in category_achievements %}
+            {% set achievement = achievement_data.achievement %}
+            {% set is_unlocked = achievement_data.is_unlocked %}
+            {% set progress_percentage = achievement_data.progress_percentage %}
+            
+            <div class="bg-white rounded-lg shadow-md p-6 {% if not is_unlocked %}opacity-60{% endif %} transition hover:shadow-lg">
+                <!-- Icon and Status -->
+                <div class="flex items-start justify-between mb-4">
+                    <div class="p-4 rounded-full {% if is_unlocked %}bg-yellow-100{% else %}bg-gray-100{% endif %}">
+                        <i class="{{ achievement.icon_class or 'fas fa-trophy' }} text-3xl {% if is_unlocked %}text-yellow-500{% else %}text-gray-400{% endif %}"></i>
+                    </div>
+                    {% if is_unlocked %}
+                    <span class="px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
+                        <i class="fas fa-check mr-1"></i>Unlocked
+                    </span>
+                    {% else %}
+                    <span class="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-semibold rounded-full">
+                        <i class="fas fa-lock mr-1"></i>Locked
+                    </span>
+                    {% endif %}
+                </div>
+                
+                <!-- Achievement Info -->
+                <h3 class="text-lg font-bold mb-2">{{ achievement.name }}</h3>
+                <p class="text-sm text-gray-600 mb-4">{{ achievement.description }}</p>
+                
+                <!-- Progress Bar (for locked achievements) -->
+                {% if not is_unlocked and progress_percentage > 0 %}
+                <div class="mb-3">
+                    <div class="flex justify-between text-xs text-gray-600 mb-1">
+                        <span>Progress</span>
+                        <span>{{ achievement_data.progress_current }}/{{ achievement_data.progress_target }}</span>
+                    </div>
+                    <div class="bg-gray-200 rounded-full h-2">
+                        <div class="bg-indigo-500 h-2 rounded-full transition-all duration-500" 
+                             style="width: {{ progress_percentage }}%"></div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Points and Difficulty -->
+                <div class="flex items-center justify-between text-sm">
+                    <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded">
+                        <i class="fas fa-star mr-1"></i>{{ achievement.points }} pts
+                    </span>
+                    <span class="capitalize px-2 py-1 rounded
+                        {% if achievement.difficulty == 'bronze' %}bg-orange-100 text-orange-700{% endif %}
+                        {% if achievement.difficulty == 'silver' %}bg-gray-100 text-gray-700{% endif %}
+                        {% if achievement.difficulty == 'gold' %}bg-yellow-100 text-yellow-700{% endif %}
+                        {% if achievement.difficulty == 'platinum' %}bg-purple-100 text-purple-700{% endif %}">
+                        {{ achievement.difficulty }}
+                    </span>
+                </div>
+                
+                <!-- Unlock Date -->
+                {% if is_unlocked and achievement_data.unlocked_at %}
+                <div class="mt-3 pt-3 border-t border-gray-200">
+                    <p class="text-xs text-gray-500">
+                        <i class="fas fa-calendar mr-1"></i>Unlocked {{ achievement_data.unlocked_at.strftime('%B %d, %Y') }}
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+    
+    {% if not achievements %}
+    <div class="text-center py-12">
+        <i class="fas fa-trophy text-6xl text-gray-300 mb-4"></i>
+        <p class="text-xl text-gray-500">No achievements yet. Start learning to unlock them!</p>
+        <a href="{{ url_for('catalog.index') }}" class="mt-4 inline-block px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+            Browse Courses
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

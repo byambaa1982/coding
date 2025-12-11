@@ -760,3 +760,339 @@ class QuizAnswer(db.Model):
     
     def __repr__(self):
         return f'<QuizAnswer Attempt:{self.attempt_id} Question:{self.question_id}>'
+
+
+class Certificate(db.Model):
+    """Certificate model for course completion certificates."""
+    
+    __tablename__ = 'certificates'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    uuid = db.Column(db.String(36), unique=True, nullable=False,
+                     default=lambda: str(uuid.uuid4()), index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('tutorial_users.id'), nullable=False)
+    tutorial_id = db.Column(db.Integer, db.ForeignKey('new_tutorials.id'), nullable=False)
+    enrollment_id = db.Column(db.Integer, db.ForeignKey('tutorial_enrollments.id'), nullable=False)
+    
+    # Certificate details
+    certificate_number = db.Column(db.String(100), unique=True, nullable=False, index=True)
+    issued_to_name = db.Column(db.String(200), nullable=False)
+    tutorial_title = db.Column(db.String(300), nullable=False)
+    instructor_name = db.Column(db.String(200), nullable=True)
+    
+    # File storage
+    pdf_url = db.Column(db.String(500), nullable=True)
+    pdf_path = db.Column(db.String(500), nullable=True)
+    
+    # Verification
+    verification_code = db.Column(db.String(50), unique=True, nullable=False, index=True)
+    is_revoked = db.Column(db.Boolean, default=False)
+    revoked_reason = db.Column(db.String(500), nullable=True)
+    
+    # Metadata
+    completion_date = db.Column(db.Date, nullable=False)
+    issue_date = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('TutorialUser', backref=db.backref('certificates', lazy='dynamic'))
+    tutorial = db.relationship('NewTutorial', backref=db.backref('certificates', lazy='dynamic'))
+    enrollment = db.relationship('TutorialEnrollment', backref='certificate', uselist=False)
+    
+    # Unique constraint
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'tutorial_id', name='unique_user_tutorial_certificate'),
+    )
+    
+    def __repr__(self):
+        return f'<Certificate {self.certificate_number}>'
+    
+    @staticmethod
+    def generate_certificate_number():
+        """Generate unique certificate number."""
+        import random
+        timestamp = datetime.utcnow().strftime('%Y%m')
+        random_part = ''.join([str(random.randint(0, 9)) for _ in range(8)])
+        return f'CERT-{timestamp}-{random_part}'
+    
+    @staticmethod
+    def generate_verification_code():
+        """Generate unique verification code."""
+        import random
+        import string
+        return ''.join(random.choices(string.ascii_uppercase + string.digits, k=12))
+
+
+class Review(db.Model):
+    """Review/Rating model for tutorials."""
+    
+    __tablename__ = 'reviews'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('tutorial_users.id'), nullable=False)
+    tutorial_id = db.Column(db.Integer, db.ForeignKey('new_tutorials.id'), nullable=False)
+    enrollment_id = db.Column(db.Integer, db.ForeignKey('tutorial_enrollments.id'), nullable=True)
+    
+    # Review details
+    rating = db.Column(db.Integer, nullable=False)  # 1-5
+    title = db.Column(db.String(200), nullable=True)
+    comment = db.Column(db.Text, nullable=True)
+    
+    # Additional ratings
+    content_quality = db.Column(db.Integer, nullable=True)  # 1-5
+    instructor_quality = db.Column(db.Integer, nullable=True)  # 1-5
+    value_for_money = db.Column(db.Integer, nullable=True)  # 1-5
+    
+    # Moderation
+    is_verified_purchase = db.Column(db.Boolean, default=False)
+    is_approved = db.Column(db.Boolean, default=True)
+    is_featured = db.Column(db.Boolean, default=False)
+    
+    # Helpfulness
+    helpful_count = db.Column(db.Integer, default=0)
+    not_helpful_count = db.Column(db.Integer, default=0)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('TutorialUser', backref=db.backref('reviews', lazy='dynamic'))
+    tutorial = db.relationship('NewTutorial', backref=db.backref('reviews', lazy='dynamic'))
+    enrollment = db.relationship('TutorialEnrollment', backref=db.backref('reviews', lazy='dynamic'))
+    
+    # Unique constraint
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'tutorial_id', name='unique_user_tutorial_review'),
+    )
+    
+    def __repr__(self):
+        return f'<Review User:{self.user_id} Tutorial:{self.tutorial_id} Rating:{self.rating}>'
+
+
+class Achievement(db.Model):
+    """Achievement/Badge definition model."""
+    
+    __tablename__ = 'achievements'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Achievement details
+    name = db.Column(db.String(200), unique=True, nullable=False)
+    slug = db.Column(db.String(250), unique=True, nullable=False, index=True)
+    description = db.Column(db.Text, nullable=False)
+    icon_url = db.Column(db.String(500), nullable=True)
+    icon_class = db.Column(db.String(100), nullable=True)  # CSS class for icon
+    
+    # Achievement criteria
+    achievement_type = db.Column(db.String(50), nullable=False, index=True)  # 'first_lesson', 'complete_course', 'streak', 'exercise_master', etc.
+    criteria = db.Column(db.Text, nullable=True)  # JSON: {"lessons_completed": 10, "course_type": "python"}
+    points = db.Column(db.Integer, default=10)
+    
+    # Categorization
+    category = db.Column(db.String(50), nullable=True)  # 'learning', 'social', 'mastery'
+    difficulty = db.Column(db.String(20), default='bronze')  # 'bronze', 'silver', 'gold', 'platinum'
+    
+    # Visibility
+    is_hidden = db.Column(db.Boolean, default=False)  # Secret achievements
+    is_active = db.Column(db.Boolean, default=True)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<Achievement {self.name}>'
+
+
+class UserAchievement(db.Model):
+    """User achievement tracking model."""
+    
+    __tablename__ = 'user_achievements'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('tutorial_users.id'), nullable=False)
+    achievement_id = db.Column(db.Integer, db.ForeignKey('achievements.id'), nullable=False)
+    
+    # Progress tracking
+    progress_current = db.Column(db.Integer, default=0)
+    progress_target = db.Column(db.Integer, default=1)
+    is_unlocked = db.Column(db.Boolean, default=False)
+    
+    # Timestamps
+    started_at = db.Column(db.DateTime, default=datetime.utcnow)
+    unlocked_at = db.Column(db.DateTime, nullable=True)
+    
+    # Relationships
+    user = db.relationship('TutorialUser', backref=db.backref('achievements', lazy='dynamic'))
+    achievement = db.relationship('Achievement', backref=db.backref('user_achievements', lazy='dynamic'))
+    
+    # Unique constraint
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'achievement_id', name='unique_user_achievement'),
+    )
+    
+    def __repr__(self):
+        return f'<UserAchievement User:{self.user_id} Achievement:{self.achievement_id}>'
+    
+    def check_and_unlock(self):
+        """Check if achievement criteria is met and unlock if needed."""
+        if not self.is_unlocked and self.progress_current >= self.progress_target:
+            self.is_unlocked = True
+            self.unlocked_at = datetime.utcnow()
+            db.session.commit()
+            return True
+        return False
+
+
+class Notification(db.Model):
+    """Notification model for user alerts."""
+    
+    __tablename__ = 'notifications'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('tutorial_users.id'), nullable=False)
+    
+    # Notification details
+    notification_type = db.Column(db.String(50), nullable=False, index=True)  # 'achievement', 'certificate', 'course_update', 'reminder', etc.
+    title = db.Column(db.String(300), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    
+    # Action/Link
+    action_url = db.Column(db.String(500), nullable=True)
+    action_text = db.Column(db.String(100), nullable=True)
+    
+    # Status
+    is_read = db.Column(db.Boolean, default=False, index=True)
+    read_at = db.Column(db.DateTime, nullable=True)
+    
+    # Related objects (optional)
+    related_type = db.Column(db.String(50), nullable=True)  # 'tutorial', 'achievement', 'certificate'
+    related_id = db.Column(db.Integer, nullable=True)
+    
+    # Metadata
+    icon_class = db.Column(db.String(100), nullable=True)
+    priority = db.Column(db.String(20), default='normal')  # 'low', 'normal', 'high'
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    expires_at = db.Column(db.DateTime, nullable=True)
+    
+    # Relationships
+    user = db.relationship('TutorialUser', backref=db.backref('notifications', lazy='dynamic'))
+    
+    def __repr__(self):
+        return f'<Notification User:{self.user_id} Type:{self.notification_type}>'
+    
+    def mark_as_read(self):
+        """Mark notification as read."""
+        if not self.is_read:
+            self.is_read = True
+            self.read_at = datetime.utcnow()
+            db.session.commit()
+
+
+class LearningStreak(db.Model):
+    """Learning streak tracking model."""
+    
+    __tablename__ = 'learning_streaks'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('tutorial_users.id'), nullable=False, unique=True)
+    
+    # Streak data
+    current_streak = db.Column(db.Integer, default=0)
+    longest_streak = db.Column(db.Integer, default=0)
+    total_learning_days = db.Column(db.Integer, default=0)
+    
+    # Dates
+    last_activity_date = db.Column(db.Date, nullable=True)
+    streak_start_date = db.Column(db.Date, nullable=True)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('TutorialUser', backref='learning_streak', uselist=False)
+    
+    def __repr__(self):
+        return f'<LearningStreak User:{self.user_id} Current:{self.current_streak}>'
+    
+    def update_streak(self):
+        """Update streak based on current date."""
+        from datetime import date
+        today = date.today()
+        
+        if not self.last_activity_date:
+            # First activity
+            self.current_streak = 1
+            self.longest_streak = 1
+            self.total_learning_days = 1
+            self.last_activity_date = today
+            self.streak_start_date = today
+        elif self.last_activity_date == today:
+            # Already logged activity today
+            return
+        elif self.last_activity_date == today - timedelta(days=1):
+            # Consecutive day
+            self.current_streak += 1
+            self.last_activity_date = today
+            self.total_learning_days += 1
+            if self.current_streak > self.longest_streak:
+                self.longest_streak = self.current_streak
+        else:
+            # Streak broken
+            self.current_streak = 1
+            self.last_activity_date = today
+            self.streak_start_date = today
+            self.total_learning_days += 1
+        
+        db.session.commit()
+
+
+class UserAnalytics(db.Model):
+    """User analytics and statistics model."""
+    
+    __tablename__ = 'user_analytics'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('tutorial_users.id'), nullable=False, unique=True)
+    
+    # Learning statistics
+    total_learning_time_minutes = db.Column(db.Integer, default=0)
+    total_courses_enrolled = db.Column(db.Integer, default=0)
+    total_courses_completed = db.Column(db.Integer, default=0)
+    total_lessons_completed = db.Column(db.Integer, default=0)
+    total_exercises_completed = db.Column(db.Integer, default=0)
+    total_quizzes_completed = db.Column(db.Integer, default=0)
+    
+    # Performance statistics
+    average_quiz_score = db.Column(db.Numeric(5, 2), default=0.00)
+    average_exercise_success_rate = db.Column(db.Numeric(5, 2), default=0.00)
+    total_points_earned = db.Column(db.Integer, default=0)
+    
+    # Course type breakdown
+    python_courses_completed = db.Column(db.Integer, default=0)
+    sql_courses_completed = db.Column(db.Integer, default=0)
+    python_exercises_completed = db.Column(db.Integer, default=0)
+    sql_exercises_completed = db.Column(db.Integer, default=0)
+    
+    # Engagement metrics
+    days_active = db.Column(db.Integer, default=0)
+    avg_daily_time_minutes = db.Column(db.Integer, default=0)
+    last_7_days_time_minutes = db.Column(db.Integer, default=0)
+    last_30_days_time_minutes = db.Column(db.Integer, default=0)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('TutorialUser', backref='analytics', uselist=False)
+    
+    def __repr__(self):
+        return f'<UserAnalytics User:{self.user_id}>'

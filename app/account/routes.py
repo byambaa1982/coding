@@ -3,15 +3,25 @@
 
 import logging
 from datetime import datetime
-from flask import render_template, redirect, url_for, flash, request
+from flask import render_template, redirect, url_for, flash, request, jsonify, send_file
 from flask_login import login_required, current_user
 from sqlalchemy import func
 
 from app.account import account_bp
 from app.models import (
-    TutorialEnrollment, TutorialOrder, NewTutorial, Wishlist
+    TutorialEnrollment, TutorialOrder, NewTutorial, Wishlist,
+    Certificate, Review, Notification, UserAchievement, Achievement
 )
 from app.extensions import db
+from app.account.analytics_utils import (
+    get_dashboard_stats, update_user_analytics, get_learning_insights
+)
+from app.account.achievement_utils import (
+    get_user_achievements, get_achievement_stats, check_and_unlock_achievements
+)
+from app.account.certificate_utils import (
+    get_user_certificates, verify_certificate, generate_certificate_pdf
+)
 
 logger = logging.getLogger(__name__)
 
@@ -19,39 +29,23 @@ logger = logging.getLogger(__name__)
 @account_bp.route('/dashboard')
 @login_required
 def dashboard():
-    """User dashboard overview."""
-    # Get enrollment statistics
-    total_enrollments = TutorialEnrollment.query.filter_by(
+    """User dashboard overview with analytics."""
+    # Get comprehensive dashboard stats
+    stats = get_dashboard_stats(current_user.id)
+    
+    # Get learning insights
+    insights = get_learning_insights(current_user.id)
+    
+    # Get unread notifications
+    unread_notifications = Notification.query.filter_by(
         user_id=current_user.id,
-        status='active'
-    ).count()
+        is_read=False
+    ).order_by(Notification.created_at.desc()).limit(5).all()
     
-    completed_courses = TutorialEnrollment.query.filter_by(
-        user_id=current_user.id,
-        status='active',
-        is_completed=True
-    ).count()
+    # Get achievement stats
+    achievement_stats = get_achievement_stats(current_user.id)
     
-    # Get active enrollments with progress
-    active_enrollments = TutorialEnrollment.query.filter_by(
-        user_id=current_user.id,
-        status='active',
-        is_completed=False
-    ).order_by(TutorialEnrollment.enrolled_at.desc()).limit(5).all()
-    
-    # Get recently completed
-    recent_completions = TutorialEnrollment.query.filter_by(
-        user_id=current_user.id,
-        status='active',
-        is_completed=True
-    ).order_by(TutorialEnrollment.completed_at.desc()).limit(3).all()
-    
-    # Get total spent
-    total_spent = db.session.query(func.sum(TutorialOrder.total_amount))\
-        .filter_by(user_id=current_user.id, status='completed')\
-        .scalar() or 0
-    
-    # Get course type breakdown
+    # Course type breakdown
     python_courses = TutorialEnrollment.query.join(NewTutorial)\
         .filter(
             TutorialEnrollment.user_id == current_user.id,
@@ -67,11 +61,10 @@ def dashboard():
         ).count()
     
     return render_template('account/dashboard.html',
-                         total_enrollments=total_enrollments,
-                         completed_courses=completed_courses,
-                         active_enrollments=active_enrollments,
-                         recent_completions=recent_completions,
-                         total_spent=total_spent,
+                         stats=stats,
+                         insights=insights,
+                         unread_notifications=unread_notifications,
+                         achievement_stats=achievement_stats,
                          python_courses=python_courses,
                          sql_courses=sql_courses)
 
@@ -225,3 +218,252 @@ def billing():
         .paginate(page=page, per_page=per_page, error_out=False)
     
     return render_template('account/billing.html', orders=orders)
+
+
+# ===== PHASE 7: Analytics Routes =====
+
+@account_bp.route('/analytics')
+@login_required
+def analytics():
+    """Detailed learning analytics page."""
+    # Update analytics first
+    analytics_data = update_user_analytics(current_user.id)
+    
+    # Get dashboard stats with charts data
+    stats = get_dashboard_stats(current_user.id)
+    
+    # Get insights
+    insights = get_learning_insights(current_user.id)
+    
+    return render_template('account/analytics.html',
+                         analytics=analytics_data,
+                         stats=stats,
+                         insights=insights)
+
+
+# ===== PHASE 7: Certificate Routes =====
+
+@account_bp.route('/certificates')
+@login_required
+def certificates():
+    """Display user's certificates."""
+    certificates = get_user_certificates(current_user.id)
+    
+    return render_template('account/certificates.html',
+                         certificates=certificates)
+
+
+@account_bp.route('/certificate/<int:certificate_id>')
+@login_required
+def view_certificate(certificate_id):
+    """View a specific certificate."""
+    certificate = Certificate.query.get_or_404(certificate_id)
+    
+    # Verify ownership
+    if certificate.user_id != current_user.id:
+        flash('You do not have permission to view this certificate.', 'error')
+        return redirect(url_for('account.certificates'))
+    
+    return render_template('account/view_certificate.html',
+                         certificate=certificate)
+
+
+@account_bp.route('/certificate/<int:certificate_id>/download')
+@login_required
+def download_certificate(certificate_id):
+    """Download certificate PDF."""
+    certificate = Certificate.query.get_or_404(certificate_id)
+    
+    # Verify ownership
+    if certificate.user_id != current_user.id:
+        flash('You do not have permission to download this certificate.', 'error')
+        return redirect(url_for('account.certificates'))
+    
+    if not certificate.pdf_path:
+        flash('Certificate PDF not available.', 'error')
+        return redirect(url_for('account.certificates'))
+    
+    try:
+        return send_file(certificate.pdf_path, as_attachment=True,
+                        download_name=f'certificate_{certificate.certificate_number}.pdf')
+    except Exception as e:
+        logger.error(f"Error downloading certificate: {e}")
+        flash('Error downloading certificate.', 'error')
+        return redirect(url_for('account.certificates'))
+
+
+@account_bp.route('/certificate/verify', methods=['GET', 'POST'])
+def verify_certificate_page():
+    """Certificate verification page."""
+    certificate = None
+    is_valid = None
+    message = None
+    
+    if request.method == 'POST':
+        cert_number = request.form.get('certificate_number', '').strip()
+        verify_code = request.form.get('verification_code', '').strip()
+        
+        is_valid, certificate, message = verify_certificate(
+            certificate_number=cert_number if cert_number else None,
+            verification_code=verify_code if verify_code else None
+        )
+    
+    return render_template('account/verify_certificate.html',
+                         certificate=certificate,
+                         is_valid=is_valid,
+                         message=message)
+
+
+# ===== PHASE 7: Achievement Routes =====
+
+@account_bp.route('/achievements')
+@login_required
+def achievements():
+    """Display user's achievements."""
+    achievements_by_category = get_user_achievements(current_user.id, include_locked=True)
+    achievement_stats = get_achievement_stats(current_user.id)
+    
+    return render_template('account/achievements.html',
+                         achievements=achievements_by_category,
+                         stats=achievement_stats)
+
+
+@account_bp.route('/achievements/refresh', methods=['POST'])
+@login_required
+def refresh_achievements():
+    """Manually refresh/check achievements."""
+    newly_unlocked = check_and_unlock_achievements(current_user.id)
+    
+    if newly_unlocked:
+        flash(f'Unlocked {len(newly_unlocked)} new achievement(s)!', 'success')
+    else:
+        flash('No new achievements unlocked.', 'info')
+    
+    return redirect(url_for('account.achievements'))
+
+
+# ===== PHASE 7: Notification Routes =====
+
+@account_bp.route('/notifications')
+@login_required
+def notifications():
+    """Display user notifications."""
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    
+    notifications = Notification.query.filter_by(user_id=current_user.id)\
+        .order_by(Notification.is_read.asc(), Notification.created_at.desc())\
+        .paginate(page=page, per_page=per_page, error_out=False)
+    
+    return render_template('account/notifications.html',
+                         notifications=notifications)
+
+
+@account_bp.route('/notifications/<int:notification_id>/read', methods=['POST'])
+@login_required
+def mark_notification_read(notification_id):
+    """Mark notification as read."""
+    notification = Notification.query.get_or_404(notification_id)
+    
+    if notification.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    notification.mark_as_read()
+    
+    return jsonify({'success': True})
+
+
+@account_bp.route('/notifications/mark-all-read', methods=['POST'])
+@login_required
+def mark_all_notifications_read():
+    """Mark all notifications as read."""
+    Notification.query.filter_by(
+        user_id=current_user.id,
+        is_read=False
+    ).update({'is_read': True, 'read_at': datetime.utcnow()})
+    
+    db.session.commit()
+    
+    flash('All notifications marked as read.', 'success')
+    return redirect(url_for('account.notifications'))
+
+
+@account_bp.route('/notifications/unread-count')
+@login_required
+def unread_notification_count():
+    """Get unread notification count (for navbar)."""
+    count = Notification.query.filter_by(
+        user_id=current_user.id,
+        is_read=False
+    ).count()
+    
+    return jsonify({'count': count})
+
+
+# ===== PHASE 7: Review Routes =====
+
+@account_bp.route('/tutorial/<int:tutorial_id>/review', methods=['GET', 'POST'])
+@login_required
+def add_review(tutorial_id):
+    """Add or edit review for a course."""
+    tutorial = NewTutorial.query.get_or_404(tutorial_id)
+    
+    # Check if user is enrolled
+    enrollment = TutorialEnrollment.query.filter_by(
+        user_id=current_user.id,
+        tutorial_id=tutorial_id,
+        status='active'
+    ).first()
+    
+    if not enrollment:
+        flash('You must be enrolled in this course to leave a review.', 'error')
+        return redirect(url_for('catalog.tutorial_detail', slug=tutorial.slug))
+    
+    # Check if review already exists
+    existing_review = Review.query.filter_by(
+        user_id=current_user.id,
+        tutorial_id=tutorial_id
+    ).first()
+    
+    if request.method == 'POST':
+        rating = request.form.get('rating', type=int)
+        title = request.form.get('title', '').strip()
+        comment = request.form.get('comment', '').strip()
+        
+        # Validate
+        if not rating or rating < 1 or rating > 5:
+            flash('Please provide a rating between 1 and 5.', 'error')
+        elif not comment:
+            flash('Please provide a review comment.', 'error')
+        else:
+            if existing_review:
+                # Update existing review
+                existing_review.rating = rating
+                existing_review.title = title
+                existing_review.comment = comment
+                existing_review.updated_at = datetime.utcnow()
+                flash('Your review has been updated.', 'success')
+            else:
+                # Create new review
+                review = Review(
+                    user_id=current_user.id,
+                    tutorial_id=tutorial_id,
+                    enrollment_id=enrollment.id,
+                    rating=rating,
+                    title=title,
+                    comment=comment,
+                    is_verified_purchase=True
+                )
+                db.session.add(review)
+                flash('Thank you for your review!', 'success')
+                
+                # Trigger achievement check
+                from app.account.achievement_utils import trigger_achievement_check
+                trigger_achievement_check(current_user.id, 'review_written')
+            
+            db.session.commit()
+            return redirect(url_for('catalog.tutorial_detail', slug=tutorial.slug))
+    
+    return render_template('account/add_review.html',
+                         tutorial=tutorial,
+                         existing_review=existing_review)

@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics - {{ config.APP_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold mb-2">Learning Analytics</h1>
+        <p class="text-gray-600">Track your progress and see how you're improving</p>
+    </div>
+
+    <!-- Insights Banner -->
+    {% if insights %}
+    <div class="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg shadow-lg p-6 mb-8 text-white">
+        <h2 class="text-xl font-bold mb-4">📊 Your Learning Insights</h2>
+        <div class="space-y-2">
+            {% for insight in insights %}
+            <p class="text-blue-100"><i class="fas fa-lightbulb mr-2"></i>{{ insight }}</p>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Main Statistics -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Total Learning Time -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-gray-600">Total Learning Time</h3>
+                <i class="fas fa-clock text-2xl text-blue-500"></i>
+            </div>
+            <p class="text-3xl font-bold text-gray-800">{{ analytics.total_learning_time_minutes // 60 }}h {{ analytics.total_learning_time_minutes % 60 }}m</p>
+            <p class="text-sm text-gray-500 mt-2">All time</p>
+        </div>
+
+        <!-- Courses Completed -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-gray-600">Courses Completed</h3>
+                <i class="fas fa-graduation-cap text-2xl text-green-500"></i>
+            </div>
+            <p class="text-3xl font-bold text-gray-800">{{ analytics.total_courses_completed }}</p>
+            <p class="text-sm text-gray-500 mt-2">Out of {{ analytics.total_courses_enrolled }}</p>
+        </div>
+
+        <!-- Exercises Completed -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-gray-600">Exercises Solved</h3>
+                <i class="fas fa-code text-2xl text-purple-500"></i>
+            </div>
+            <p class="text-3xl font-bold text-gray-800">{{ analytics.total_exercises_completed }}</p>
+            <p class="text-sm text-gray-500 mt-2">{{ analytics.average_exercise_success_rate }}% success rate</p>
+        </div>
+
+        <!-- Current Streak -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-gray-600">Learning Streak</h3>
+                <i class="fas fa-fire text-2xl text-orange-500"></i>
+            </div>
+            <p class="text-3xl font-bold text-gray-800">{{ stats.streak.current_streak }}</p>
+            <p class="text-sm text-gray-500 mt-2">Days in a row</p>
+        </div>
+    </div>
+
+    <!-- Weekly Progress Chart -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h3 class="text-xl font-bold mb-6">Weekly Learning Activity</h3>
+        <div class="grid grid-cols-7 gap-4">
+            {% for day in stats.weekly_progress %}
+            <div class="text-center">
+                <div class="bg-gray-100 rounded-lg p-4 mb-2" style="height: {{ (day.minutes / 60 * 100)|int if day.minutes > 0 else 10 }}px; min-height: 40px; background-color: {% if day.minutes > 0 %}rgba(59, 130, 246, {{ (day.minutes / 60)|round(1) }}){% else %}#f3f4f6{% endif %};">
+                </div>
+                <p class="text-xs text-gray-600 font-semibold">{{ day.date }}</p>
+                <p class="text-xs text-gray-500">{{ day.minutes }}m</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Course Type Breakdown -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <!-- Python Courses -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center mb-4">
+                <i class="fab fa-python text-3xl text-blue-600 mr-3"></i>
+                <h3 class="text-xl font-bold">Python Progress</h3>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm text-gray-600">Courses Completed</span>
+                        <span class="text-sm font-semibold">{{ analytics.python_courses_completed }}</span>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm text-gray-600">Exercises Completed</span>
+                        <span class="text-sm font-semibold">{{ analytics.python_exercises_completed }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SQL Courses -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-database text-3xl text-orange-600 mr-3"></i>
+                <h3 class="text-xl font-bold">SQL Progress</h3>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm text-gray-600">Courses Completed</span>
+                        <span class="text-sm font-semibold">{{ analytics.sql_courses_completed }}</span>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm text-gray-600">Exercises Completed</span>
+                        <span class="text-sm font-semibold">{{ analytics.sql_exercises_completed }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Metrics -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h3 class="text-xl font-bold mb-6">Performance Metrics</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+                <p class="text-sm text-gray-600 mb-2">Average Quiz Score</p>
+                <div class="flex items-center">
+                    <div class="flex-1 bg-gray-200 rounded-full h-4 mr-4">
+                        <div class="bg-green-500 h-4 rounded-full" style="width: {{ analytics.average_quiz_score }}%"></div>
+                    </div>
+                    <span class="text-lg font-bold">{{ analytics.average_quiz_score }}%</span>
+                </div>
+            </div>
+            <div>
+                <p class="text-sm text-gray-600 mb-2">Exercise Success Rate</p>
+                <div class="flex items-center">
+                    <div class="flex-1 bg-gray-200 rounded-full h-4 mr-4">
+                        <div class="bg-blue-500 h-4 rounded-full" style="width: {{ analytics.average_exercise_success_rate }}%"></div>
+                    </div>
+                    <span class="text-lg font-bold">{{ analytics.average_exercise_success_rate }}%</span>
+                </div>
+            </div>
+            <div>
+                <p class="text-sm text-gray-600 mb-2">Days Active</p>
+                <div class="flex items-center">
+                    <i class="fas fa-calendar-check text-2xl text-indigo-500 mr-3"></i>
+                    <span class="text-lg font-bold">{{ analytics.days_active }} days</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-xl font-bold mb-6">Recent Activity</h3>
+        {% if stats.recent_completions %}
+        <div class="space-y-4">
+            {% for completion in stats.recent_completions %}
+            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div class="flex items-center">
+                    <i class="fas fa-check-circle text-green-500 text-xl mr-3"></i>
+                    <div>
+                        <p class="font-semibold">{{ completion.lesson.title }}</p>
+                        <p class="text-sm text-gray-600">{{ completion.lesson.tutorial.title }}</p>
+                    </div>
+                </div>
+                <span class="text-sm text-gray-500">{{ completion.completed_at.strftime('%b %d') }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-center py-8">No recent activity. Start learning today!</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

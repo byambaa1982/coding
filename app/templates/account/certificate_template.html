@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Certificate of Completion</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 0;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Georgia', serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        .certificate {
+            width: 297mm;
+            height: 210mm;
+            padding: 40mm;
+            box-sizing: border-box;
+            background: white;
+            border: 20px solid #667eea;
+            position: relative;
+        }
+        .border-design {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            right: 30px;
+            bottom: 30px;
+            border: 3px solid #764ba2;
+        }
+        .content {
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            padding-top: 60px;
+        }
+        .header {
+            font-size: 48px;
+            color: #667eea;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+        .subtitle {
+            font-size: 24px;
+            color: #764ba2;
+            margin-bottom: 40px;
+        }
+        .recipient {
+            font-size: 36px;
+            font-weight: bold;
+            color: #333;
+            margin: 30px 0;
+            border-bottom: 2px solid #667eea;
+            display: inline-block;
+            padding: 10px 40px;
+        }
+        .course-title {
+            font-size: 28px;
+            color: #667eea;
+            font-weight: bold;
+            margin: 30px 0;
+        }
+        .description {
+            font-size: 18px;
+            color: #666;
+            margin: 20px auto;
+            max-width: 600px;
+            line-height: 1.6;
+        }
+        .details {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 60px;
+            font-size: 14px;
+        }
+        .detail-item {
+            text-align: center;
+        }
+        .detail-label {
+            color: #999;
+            margin-bottom: 5px;
+        }
+        .detail-value {
+            color: #333;
+            font-weight: bold;
+        }
+        .signature-line {
+            width: 200px;
+            border-top: 2px solid #333;
+            margin: 0 auto;
+            padding-top: 10px;
+        }
+        .verification {
+            position: absolute;
+            bottom: 40px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 10px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="certificate">
+        <div class="border-design"></div>
+        <div class="content">
+            <div class="header">Certificate of Completion</div>
+            <div class="subtitle">This is to certify that</div>
+            
+            <div class="recipient">{{ certificate.issued_to_name }}</div>
+            
+            <div class="description">
+                has successfully completed the course
+            </div>
+            
+            <div class="course-title">{{ certificate.tutorial_title }}</div>
+            
+            <div class="description">
+                demonstrating proficiency and dedication in the subject matter
+            </div>
+            
+            <div class="details">
+                <div class="detail-item">
+                    <div class="detail-label">Certificate Number</div>
+                    <div class="detail-value">{{ certificate.certificate_number }}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Completion Date</div>
+                    <div class="detail-value">{{ certificate.completion_date.strftime('%B %d, %Y') }}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Issue Date</div>
+                    <div class="detail-value">{{ certificate.issue_date.strftime('%B %d, %Y') }}</div>
+                </div>
+            </div>
+            
+            {% if certificate.instructor_name %}
+            <div style="margin-top: 60px;">
+                <div class="signature-line">{{ certificate.instructor_name }}</div>
+                <div style="color: #999; font-size: 12px; margin-top: 5px;">Instructor</div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="verification">
+            Verification Code: {{ certificate.verification_code }} | Verify at: {{ request.url_root }}account/certificate/verify
+        </div>
+    </div>
+</body>
+</html>
