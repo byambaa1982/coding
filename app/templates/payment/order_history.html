@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Order History - {{ config.APP_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Order History</h1>
+    
+    {% if orders.items %}
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Order Number
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Items
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Total
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                    </th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for order in orders.items %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <a href="{{ url_for('payment.order_confirmation', order_id=order.id) }}" 
+                           class="text-indigo-600 hover:text-indigo-900 font-medium">
+                            {{ order.order_number }}
+                        </a>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {{ order.created_at.strftime('%b %d, %Y') }}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-700">
+                        {{ order.items.count() }} course{{ 's' if order.items.count() != 1 else '' }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                        ${{ "%.2f"|format(order.total_amount) }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
+                            {% if order.status == 'completed' %}bg-green-100 text-green-800
+                            {% elif order.status == 'pending' %}bg-yellow-100 text-yellow-800
+                            {% elif order.status == 'refunded' %}bg-gray-100 text-gray-800
+                            {% else %}bg-red-100 text-red-800{% endif %}">
+                            {{ order.status|capitalize }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <a href="{{ url_for('payment.order_confirmation', order_id=order.id) }}" 
+                           class="text-indigo-600 hover:text-indigo-900 mr-3">
+                            View
+                        </a>
+                        {% if order.receipt_url %}
+                        <a href="{{ order.receipt_url }}" target="_blank"
+                           class="text-gray-600 hover:text-gray-900">
+                            Receipt
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    {% if orders.pages > 1 %}
+    <div class="mt-6 flex justify-center">
+        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+            {% if orders.has_prev %}
+            <a href="{{ url_for('payment.order_history', page=orders.prev_num) }}" 
+               class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                Previous
+            </a>
+            {% endif %}
+            
+            {% for page_num in orders.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                {% if page_num %}
+                    <a href="{{ url_for('payment.order_history', page=page_num) }}" 
+                       class="relative inline-flex items-center px-4 py-2 border border-gray-300 
+                              {% if page_num == orders.page %}bg-indigo-50 text-indigo-600 z-10
+                              {% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %} text-sm font-medium">
+                        {{ page_num }}
+                    </a>
+                {% else %}
+                    <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                        ...
+                    </span>
+                {% endif %}
+            {% endfor %}
+            
+            {% if orders.has_next %}
+            <a href="{{ url_for('payment.order_history', page=orders.next_num) }}" 
+               class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                Next
+            </a>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <div class="bg-white rounded-lg shadow-md p-12 text-center">
+        <i class="fas fa-shopping-bag text-6xl text-gray-300 mb-4"></i>
+        <h2 class="text-2xl font-semibold mb-2">No orders yet</h2>
+        <p class="text-gray-600 mb-6">Start your learning journey by purchasing a course</p>
+        <a href="{{ url_for('catalog.index') }}" 
+           class="inline-block bg-indigo-600 text-white px-6 py-3 rounded-md font-semibold hover:bg-indigo-700">
+            Browse Courses
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -65,18 +65,40 @@
                         </div>
 
                         {% if current_user.is_authenticated %}
-                        <button class="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-semibold mb-3">
-                            <i class="fas fa-shopping-cart mr-2"></i> Enroll Now
-                        </button>
+                            {% if is_enrolled %}
+                            <a href="{{ url_for('account.my_courses') }}" 
+                               class="block w-full bg-green-600 text-center text-white px-6 py-3 rounded-lg hover:bg-green-700 transition font-semibold mb-3">
+                                <i class="fas fa-check-circle mr-2"></i> Already Enrolled
+                            </a>
+                            {% elif tutorial.is_free %}
+                            <form method="POST" action="{{ url_for('payment.add_to_cart', tutorial_id=tutorial.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <button type="submit" class="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition font-semibold mb-3">
+                                    <i class="fas fa-gift mr-2"></i> Enroll for Free
+                                </button>
+                            </form>
+                            {% else %}
+                            <form method="POST" action="{{ url_for('payment.add_to_cart', tutorial_id=tutorial.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <button type="submit" class="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-semibold mb-3">
+                                    <i class="fas fa-shopping-cart mr-2"></i> Add to Cart
+                                </button>
+                            </form>
+                            {% endif %}
                         {% else %}
                         <a href="{{ url_for('auth.login') }}" class="block w-full bg-blue-600 text-center text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-semibold mb-3">
                             <i class="fas fa-sign-in-alt mr-2"></i> Login to Enroll
                         </a>
                         {% endif %}
 
-                        <button class="w-full border-2 border-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-50 transition">
-                            <i class="far fa-heart mr-2"></i> Add to Wishlist
-                        </button>
+                        {% if current_user.is_authenticated %}
+                        <form method="POST" action="{{ url_for('account.add_to_wishlist', tutorial_id=tutorial.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <button type="submit" class="w-full border-2 border-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-50 transition">
+                                <i class="far fa-heart mr-2"></i> Add to Wishlist
+                            </button>
+                        </form>
+                        {% endif %}
                     </div>
                 </div>
             </div>

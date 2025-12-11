@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}My Courses - {{ config.APP_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">My Courses</h1>
+    
+    <!-- Filters -->
+    <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+        <div class="flex flex-wrap items-center gap-4">
+            <div>
+                <label class="text-sm font-medium text-gray-700 mr-2">Course Type:</label>
+                <select onchange="window.location.href='{{ url_for('account.my_courses') }}?type=' + this.value + '&status={{ status_filter }}'" 
+                        class="px-3 py-2 border rounded-md focus:ring-2 focus:ring-indigo-500">
+                    <option value="all" {% if course_type == 'all' %}selected{% endif %}>All Courses</option>
+                    <option value="python" {% if course_type == 'python' %}selected{% endif %}>Python</option>
+                    <option value="sql" {% if course_type == 'sql' %}selected{% endif %}>SQL</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="text-sm font-medium text-gray-700 mr-2">Status:</label>
+                <select onchange="window.location.href='{{ url_for('account.my_courses') }}?type={{ course_type }}&status=' + this.value" 
+                        class="px-3 py-2 border rounded-md focus:ring-2 focus:ring-indigo-500">
+                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>All Active</option>
+                    <option value="in-progress" {% if status_filter == 'in-progress' %}selected{% endif %}>In Progress</option>
+                    <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Courses Grid -->
+    {% if enrollments.items %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        {% for enrollment in enrollments.items %}
+        <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition">
+            {% if enrollment.tutorial.thumbnail_url %}
+            <img src="{{ enrollment.tutorial.thumbnail_url }}" alt="{{ enrollment.tutorial.title }}" 
+                 class="w-full h-48 object-cover">
+            {% else %}
+            <div class="w-full h-48 bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center">
+                <i class="fas fa-book text-white text-5xl"></i>
+            </div>
+            {% endif %}
+            
+            <div class="p-6">
+                <div class="mb-3">
+                    <span class="inline-block px-2 py-1 text-xs rounded font-semibold
+                        {% if enrollment.tutorial.course_type == 'python' %}bg-blue-100 text-blue-800
+                        {% else %}bg-green-100 text-green-800{% endif %}">
+                        {{ enrollment.tutorial.course_type|upper }}
+                    </span>
+                    {% if enrollment.is_completed %}
+                    <span class="inline-block px-2 py-1 text-xs rounded font-semibold bg-green-100 text-green-800 ml-2">
+                        <i class="fas fa-check-circle"></i> Completed
+                    </span>
+                    {% endif %}
+                </div>
+                
+                <h3 class="text-xl font-semibold mb-2">{{ enrollment.tutorial.title }}</h3>
+                <p class="text-sm text-gray-600 mb-4">
+                    Enrolled on {{ enrollment.enrolled_at.strftime('%B %d, %Y') }}
+                </p>
+                
+                <!-- Progress Bar -->
+                <div class="mb-4">
+                    <div class="flex items-center justify-between text-sm mb-1">
+                        <span class="text-gray-600">Progress</span>
+                        <span class="font-semibold">{{ "%.0f"|format(enrollment.progress_percentage) }}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-indigo-600 h-2 rounded-full transition-all duration-300" 
+                             data-width="{{ enrollment.progress_percentage }}"></div>
+                    </div>
+                </div>
+                
+                <!-- Stats -->
+                <div class="flex items-center justify-between text-sm text-gray-600 mb-4">
+                    <div>
+                        <i class="fas fa-book-open"></i>
+                        {{ enrollment.lessons_completed }} lessons
+                    </div>
+                    <div>
+                        <i class="fas fa-code"></i>
+                        {{ enrollment.exercises_completed }} exercises
+                    </div>
+                </div>
+                
+                <!-- Action Button -->
+                <a href="{{ url_for('catalog.course_detail', slug=enrollment.tutorial.slug) }}" 
+                   class="block w-full bg-indigo-600 text-white text-center py-2 rounded-md font-semibold hover:bg-indigo-700 transition">
+                    {% if enrollment.is_completed %}
+                        Review Course
+                    {% else %}
+                        Continue Learning
+                    {% endif %}
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if enrollments.pages > 1 %}
+    <div class="flex justify-center">
+        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+            {% if enrollments.has_prev %}
+            <a href="{{ url_for('account.my_courses', page=enrollments.prev_num, type=course_type, status=status_filter) }}" 
+               class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                Previous
+            </a>
+            {% endif %}
+            
+            {% for page_num in enrollments.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                {% if page_num %}
+                    <a href="{{ url_for('account.my_courses', page=page_num, type=course_type, status=status_filter) }}" 
+                       class="relative inline-flex items-center px-4 py-2 border border-gray-300 
+                              {% if page_num == enrollments.page %}bg-indigo-50 text-indigo-600 z-10
+                              {% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %} text-sm font-medium">
+                        {{ page_num }}
+                    </a>
+                {% else %}
+                    <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                        ...
+                    </span>
+                {% endif %}
+            {% endfor %}
+            
+            {% if enrollments.has_next %}
+            <a href="{{ url_for('account.my_courses', page=enrollments.next_num, type=course_type, status=status_filter) }}" 
+               class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                Next
+            </a>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <div class="bg-white rounded-lg shadow-md p-12 text-center">
+        <i class="fas fa-graduation-cap text-6xl text-gray-300 mb-4"></i>
+        <h2 class="text-2xl font-semibold mb-2">No courses found</h2>
+        <p class="text-gray-600 mb-6">Start your learning journey by enrolling in a course</p>
+        <a href="{{ url_for('catalog.index') }}" 
+           class="inline-block bg-indigo-600 text-white px-6 py-3 rounded-md font-semibold hover:bg-indigo-700">
+            Browse Courses
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Animate progress bars on load
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('[data-width]').forEach(function(bar) {
+        const width = bar.getAttribute('data-width');
+        setTimeout(function() {
+            bar.style.width = width + '%';
+        }, 100);
+    });
+});
+</script>
+{% endblock %}

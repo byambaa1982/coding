@@ -241,3 +241,246 @@ class Exercise(db.Model):
     
     def __repr__(self):
         return f'<Exercise {self.title}>'
+
+
+class TutorialEnrollment(db.Model):
+    """Enrollment model for user course access."""
+    
+    __tablename__ = 'tutorial_enrollments'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    uuid = db.Column(db.String(36), unique=True, nullable=False,
+                     default=lambda: str(uuid.uuid4()), index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('tutorial_users.id'), nullable=False)
+    tutorial_id = db.Column(db.Integer, db.ForeignKey('new_tutorials.id'), nullable=False)
+    order_id = db.Column(db.Integer, db.ForeignKey('tutorial_orders.id'), nullable=True)
+    
+    # Enrollment status
+    status = db.Column(db.String(20), nullable=False, default='active', index=True)
+    enrollment_type = db.Column(db.String(20), nullable=False, default='paid')  # 'paid', 'free', 'gifted'
+    
+    # Progress tracking
+    progress_percentage = db.Column(db.Numeric(5, 2), default=0.00)
+    lessons_completed = db.Column(db.Integer, default=0)
+    exercises_completed = db.Column(db.Integer, default=0)
+    last_accessed_lesson_id = db.Column(db.Integer, db.ForeignKey('lessons.id'), nullable=True)
+    
+    # Completion
+    is_completed = db.Column(db.Boolean, default=False)
+    completed_at = db.Column(db.DateTime, nullable=True)
+    certificate_issued = db.Column(db.Boolean, default=False)
+    
+    # Timestamps
+    enrolled_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    expires_at = db.Column(db.DateTime, nullable=True)  # For time-limited access
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('TutorialUser', backref=db.backref('enrollments', lazy='dynamic'))
+    tutorial = db.relationship('NewTutorial', backref=db.backref('enrollments', lazy='dynamic'))
+    last_accessed_lesson = db.relationship('Lesson', foreign_keys=[last_accessed_lesson_id])
+    
+    # Unique constraint
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'tutorial_id', name='unique_user_tutorial_enrollment'),
+    )
+    
+    def __repr__(self):
+        return f'<TutorialEnrollment User:{self.user_id} Tutorial:{self.tutorial_id}>'
+
+
+class TutorialOrder(db.Model):
+    """Order model for course purchases."""
+    
+    __tablename__ = 'tutorial_orders'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    uuid = db.Column(db.String(36), unique=True, nullable=False,
+                     default=lambda: str(uuid.uuid4()), index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('tutorial_users.id'), nullable=False)
+    
+    # Order details
+    order_number = db.Column(db.String(50), unique=True, nullable=False, index=True)
+    status = db.Column(db.String(20), nullable=False, default='pending', index=True)
+    
+    # Pricing
+    subtotal = db.Column(db.Numeric(10, 2), nullable=False)
+    discount_amount = db.Column(db.Numeric(10, 2), default=0.00)
+    tax_amount = db.Column(db.Numeric(10, 2), default=0.00)
+    total_amount = db.Column(db.Numeric(10, 2), nullable=False)
+    currency = db.Column(db.String(3), default='USD')
+    
+    # Discount/Coupon
+    coupon_code = db.Column(db.String(50), nullable=True)
+    coupon_discount_percentage = db.Column(db.Numeric(5, 2), nullable=True)
+    
+    # Stripe payment details
+    stripe_payment_intent_id = db.Column(db.String(255), unique=True, nullable=True, index=True)
+    stripe_checkout_session_id = db.Column(db.String(255), unique=True, nullable=True, index=True)
+    stripe_customer_id = db.Column(db.String(255), nullable=True)
+    payment_method = db.Column(db.String(50), default='stripe')
+    
+    # Billing information
+    billing_name = db.Column(db.String(200), nullable=True)
+    billing_email = db.Column(db.String(255), nullable=True)
+    billing_address = db.Column(db.Text, nullable=True)  # JSON string
+    
+    # Invoice
+    invoice_url = db.Column(db.String(500), nullable=True)
+    receipt_url = db.Column(db.String(500), nullable=True)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    paid_at = db.Column(db.DateTime, nullable=True)
+    refunded_at = db.Column(db.DateTime, nullable=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('TutorialUser', backref=db.backref('orders', lazy='dynamic'))
+    items = db.relationship('TutorialOrderItem', backref='order', lazy='dynamic', cascade='all, delete-orphan')
+    enrollments = db.relationship('TutorialEnrollment', backref='order', lazy='dynamic')
+    
+    def __repr__(self):
+        return f'<TutorialOrder {self.order_number}>'
+    
+    @staticmethod
+    def generate_order_number():
+        """Generate unique order number."""
+        import random
+        timestamp = datetime.utcnow().strftime('%Y%m%d')
+        random_part = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+        return f'ORD-{timestamp}-{random_part}'
+
+
+class TutorialOrderItem(db.Model):
+    """Order item model for individual course purchases."""
+    
+    __tablename__ = 'tutorial_order_items'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey('tutorial_orders.id'), nullable=False)
+    tutorial_id = db.Column(db.Integer, db.ForeignKey('new_tutorials.id'), nullable=False)
+    
+    # Item details
+    tutorial_title = db.Column(db.String(300), nullable=False)
+    quantity = db.Column(db.Integer, default=1)
+    unit_price = db.Column(db.Numeric(10, 2), nullable=False)
+    total_price = db.Column(db.Numeric(10, 2), nullable=False)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    tutorial = db.relationship('NewTutorial', backref='order_items')
+    
+    def __repr__(self):
+        return f'<TutorialOrderItem {self.tutorial_title}>'
+
+
+class Coupon(db.Model):
+    """Coupon/Discount code model."""
+    
+    __tablename__ = 'tutorial_coupons'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(50), unique=True, nullable=False, index=True)
+    
+    # Discount details
+    discount_type = db.Column(db.String(20), nullable=False, default='percentage')  # 'percentage', 'fixed'
+    discount_value = db.Column(db.Numeric(10, 2), nullable=False)
+    max_discount_amount = db.Column(db.Numeric(10, 2), nullable=True)  # For percentage discounts
+    
+    # Usage limits
+    max_uses = db.Column(db.Integer, nullable=True)  # Null = unlimited
+    times_used = db.Column(db.Integer, default=0)
+    max_uses_per_user = db.Column(db.Integer, default=1)
+    
+    # Validity
+    valid_from = db.Column(db.DateTime, nullable=True)
+    valid_until = db.Column(db.DateTime, nullable=True)
+    is_active = db.Column(db.Boolean, default=True)
+    
+    # Restrictions
+    min_purchase_amount = db.Column(db.Numeric(10, 2), nullable=True)
+    applicable_course_types = db.Column(db.String(100), nullable=True)  # 'python', 'sql', 'all'
+    specific_tutorial_ids = db.Column(db.Text, nullable=True)  # JSON array
+    
+    # Metadata
+    description = db.Column(db.String(500), nullable=True)
+    created_by_user_id = db.Column(db.Integer, db.ForeignKey('tutorial_users.id'), nullable=True)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<Coupon {self.code}>'
+    
+    def is_valid(self, user_id=None, cart_total=0, tutorial_ids=None):
+        """Check if coupon is valid for use."""
+        now = datetime.utcnow()
+        
+        # Check if active
+        if not self.is_active:
+            return False, "Coupon is not active"
+        
+        # Check date validity
+        if self.valid_from and now < self.valid_from:
+            return False, "Coupon is not yet valid"
+        if self.valid_until and now > self.valid_until:
+            return False, "Coupon has expired"
+        
+        # Check usage limits
+        if self.max_uses and self.times_used >= self.max_uses:
+            return False, "Coupon has reached maximum uses"
+        
+        # Check minimum purchase
+        if self.min_purchase_amount and cart_total < float(self.min_purchase_amount):
+            return False, f"Minimum purchase of ${self.min_purchase_amount} required"
+        
+        # Check per-user usage (would need additional query)
+        if user_id and self.max_uses_per_user:
+            uses_by_user = TutorialOrder.query.filter_by(
+                user_id=user_id,
+                coupon_code=self.code,
+                status='completed'
+            ).count()
+            if uses_by_user >= self.max_uses_per_user:
+                return False, "You have already used this coupon"
+        
+        return True, "Coupon is valid"
+    
+    def calculate_discount(self, amount):
+        """Calculate discount amount."""
+        if self.discount_type == 'percentage':
+            discount = amount * (float(self.discount_value) / 100)
+            if self.max_discount_amount:
+                discount = min(discount, float(self.max_discount_amount))
+            return round(discount, 2)
+        else:  # fixed
+            return min(float(self.discount_value), amount)
+
+
+class Wishlist(db.Model):
+    """Wishlist model for saved courses."""
+    
+    __tablename__ = 'tutorial_wishlists'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('tutorial_users.id'), nullable=False)
+    tutorial_id = db.Column(db.Integer, db.ForeignKey('new_tutorials.id'), nullable=False)
+    
+    # Timestamps
+    added_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    
+    # Relationships
+    user = db.relationship('TutorialUser', backref=db.backref('wishlist_items', lazy='dynamic'))
+    tutorial = db.relationship('NewTutorial', backref=db.backref('wishlisted_by', lazy='dynamic'))
+    
+    # Unique constraint
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'tutorial_id', name='unique_user_tutorial_wishlist'),
+    )
+    
+    def __repr__(self):
+        return f'<Wishlist User:{self.user_id} Tutorial:{self.tutorial_id}>'

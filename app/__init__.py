@@ -41,11 +41,15 @@ def create_app(config_name='development'):
     from app.main import main_bp
     from app.admin import admin_bp
     from app.catalog import catalog_bp
+    from app.payment import payment_bp
+    from app.account import account_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(main_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(catalog_bp, url_prefix='/catalog')
+    app.register_blueprint(payment_bp, url_prefix='/payment')
+    app.register_blueprint(account_bp, url_prefix='/account')
     
     # Error handlers
     @app.errorhandler(404)

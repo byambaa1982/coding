@@ -137,7 +137,20 @@ def sql_courses():
 @catalog_bp.route('/course/<slug>')
 def course_detail(slug):
     """Course detail page with curriculum."""
+    from flask_login import current_user
+    from app.models import TutorialEnrollment
+    
     tutorial = NewTutorial.query.filter_by(slug=slug, status='published').first_or_404()
+    
+    # Check if user is enrolled
+    is_enrolled = False
+    if current_user.is_authenticated:
+        enrollment = TutorialEnrollment.query.filter_by(
+            user_id=current_user.id,
+            tutorial_id=tutorial.id,
+            status='active'
+        ).first()
+        is_enrolled = enrollment is not None
     
     # Get lessons organized by section
     lessons = Lesson.query.filter_by(tutorial_id=tutorial.id).order_by(Lesson.order_index).all()
@@ -162,7 +175,8 @@ def course_detail(slug):
                          tutorial=tutorial,
                          sections=sections,
                          lessons=lessons,
-                         related=related)
+                         related=related,
+                         is_enrolled=is_enrolled)
 
 
 @catalog_bp.route('/search')
