@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Reset Password - Tutorial E-Commerce Platform{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto">
+    <div class="bg-white rounded-lg shadow-md p-8">
+        <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">Reset Password</h2>
+        
+        <p class="text-gray-600 mb-6 text-center">
+            Enter your email address and we'll send you instructions to reset your password.
+        </p>
+        
+        <form method="POST" novalidate>
+            {{ form.hidden_tag() }}
+            
+            <!-- Email -->
+            <div class="mb-6">
+                {{ form.email.label(class="block text-gray-700 font-medium mb-2") }}
+                {{ form.email(class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500") }}
+                {% if form.email.errors %}
+                    <p class="text-red-500 text-sm mt-1">{{ form.email.errors[0] }}</p>
+                {% endif %}
+            </div>
+            
+            <!-- Submit -->
+            {{ form.submit(class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium") }}
+        </form>
+        
+        <p class="text-center text-gray-600 mt-4">
+            <a href="{{ url_for('auth.login') }}" class="text-indigo-600 hover:text-indigo-800">Back to login</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

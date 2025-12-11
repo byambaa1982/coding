@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Tutorial E-Commerce Platform{% endblock %}
+
+{% block content %}
+<div class="text-center">
+    <h1 class="text-4xl font-bold text-gray-900 mb-4">
+        Welcome to Tutorial E-Commerce Platform
+    </h1>
+    <p class="text-xl text-gray-600 mb-8">
+        Learn programming through interactive courses
+    </p>
+    
+    {% if current_user.is_authenticated %}
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-2xl font-bold mb-4">Welcome back, {{ current_user.full_name or current_user.email }}!</h2>
+            <p class="text-gray-600">You are successfully logged in.</p>
+        </div>
+    {% else %}
+        <div class="space-x-4">
+            <a href="{{ url_for('auth.register') }}" 
+               class="bg-indigo-600 text-white px-6 py-3 rounded-md text-lg font-medium hover:bg-indigo-700 inline-block">
+                Get Started
+            </a>
+            <a href="{{ url_for('auth.login') }}" 
+               class="bg-gray-200 text-gray-800 px-6 py-3 rounded-md text-lg font-medium hover:bg-gray-300 inline-block">
+                Login
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
