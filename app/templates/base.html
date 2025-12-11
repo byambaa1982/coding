@@ -44,6 +44,11 @@
                         <a href="{{ url_for('catalog.sql_courses') }}" class="nav-link">
                             <i class="fas fa-database"></i> SQL
                         </a>
+                        {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('python_practice.lesson_exercises', lesson_id=1) }}" class="nav-link {% if request.endpoint and 'python_practice' in request.endpoint %}active{% endif %}">
+                            <i class="fas fa-code"></i> Practice
+                        </a>
+                        {% endif %}
                         {% if current_user.is_authenticated and current_user.is_admin %}
                         <a href="{{ url_for('admin.dashboard') }}" class="nav-link {% if request.endpoint and 'admin' in request.endpoint %}active{% endif %}">
                             <i class="fas fa-cog"></i> Admin
@@ -107,6 +112,11 @@
             <a href="#" class="nav-link">
                 <i class="fas fa-database"></i> SQL Courses
             </a>
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('python_practice.lesson_exercises', lesson_id=1) }}" class="nav-link">
+                <i class="fas fa-code"></i> Practice Exercises
+            </a>
+            {% endif %}
             <div style="border-top: 1px solid var(--border-light); margin: 8px 0; padding-top: 8px;">
                 {% if current_user.is_authenticated %}
                     <div style="padding: 8px; color: var(--text-secondary); font-size: 14px;">

@@ -3,78 +3,99 @@
 {% block title %}{{ lesson.title }} - Python Exercises{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{{ url_for('catalog.course_detail', slug=tutorial.slug) }}">{{ tutorial.title }}</a></li>
-            <li class="breadcrumb-item"><a href="{{ url_for('learning.tutorial_overview', tutorial_id=tutorial.id) }}">Curriculum</a></li>
-            <li class="breadcrumb-item active">{{ lesson.title }}</li>
-        </ol>
-    </nav>
+<div style="max-width: 1200px; margin: 0 auto; padding: 24px 16px;">
+    <!-- Breadcrumb -->
+    <div style="display: flex; gap: 8px; margin-bottom: 24px; font-size: 14px; color: var(--text-secondary);">
+        <a href="{{ url_for('main.index') }}" style="color: var(--primary); text-decoration: none;">Home</a>
+        <span>/</span>
+        <a href="{{ url_for('catalog.course_detail', slug=tutorial.slug) }}" style="color: var(--primary); text-decoration: none;">{{ tutorial.title }}</a>
+        <span>/</span>
+        <a href="{{ url_for('learning.tutorial_overview', tutorial_id=tutorial.id) }}" style="color: var(--primary); text-decoration: none;">Curriculum</a>
+        <span>/</span>
+        <span>{{ lesson.title }}</span>
+    </div>
     
-    <div class="card mb-4">
-        <div class="card-body">
-            <h2>{{ lesson.title }} - Python Exercises</h2>
-            <p class="text-muted">{{ lesson.description }}</p>
-        </div>
+    <!-- Header -->
+    <div style="background: var(--bg-secondary); border-radius: 8px; padding: 24px; margin-bottom: 32px; box-shadow: var(--shadow-sm);">
+        <h2 style="font-size: 28px; font-weight: 700; margin-bottom: 12px; color: var(--text-primary);">
+            {{ lesson.title }} - Python Exercises
+        </h2>
+        <p style="color: var(--text-secondary); font-size: 16px;">{{ lesson.description }}</p>
     </div>
     
     {% if exercises %}
-    <div class="row">
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 24px;">
         {% for item in exercises %}
         {% set exercise = item.exercise %}
-        <div class="col-md-6 mb-4">
-            <div class="card h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <h5 class="card-title">{{ exercise.title }}</h5>
-                        {% if item.has_solved %}
-                        <span class="badge bg-success">✓ Solved</span>
-                        {% endif %}
-                    </div>
-                    
-                    <p class="card-text">{{ exercise.description|truncate(150) }}</p>
-                    
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="badge bg-{{ 'success' if exercise.difficulty == 'easy' else 'warning' if exercise.difficulty == 'medium' else 'danger' }}">
-                            {{ exercise.difficulty|upper }}
-                        </span>
-                        <small class="text-muted">{{ exercise.points }} points</small>
-                    </div>
-                    
-                    {% if item.best_score > 0 %}
-                    <div class="progress mb-3" style="height: 25px;">
-                        <div class="progress-bar bg-{{ 'success' if item.best_score == 100 else 'warning' }}" 
-                             role="progressbar" 
-                             style="width: {{ item.best_score }}%">
-                            Best Score: {{ item.best_score|int }}%
-                        </div>
-                    </div>
-                    {% endif %}
-                    
-                    <div class="d-flex justify-content-between align-items-center">
-                        <a href="{{ url_for('python_practice.view_exercise', exercise_id=exercise.id) }}" 
-                           class="btn btn-primary">
-                            {{ 'Continue' if item.attempt_count > 0 else 'Start' }} Exercise
-                        </a>
-                        <small class="text-muted">{{ item.attempt_count }} attempt{{ 's' if item.attempt_count != 1 else '' }}</small>
-                    </div>
+        <div style="background: var(--bg-secondary); border-radius: 8px; padding: 24px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column;">
+            <!-- Header -->
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
+                <h5 style="font-size: 18px; font-weight: 600; color: var(--text-primary); flex: 1;">
+                    {{ exercise.title }}
+                </h5>
+                {% if item.has_solved %}
+                <span style="background: var(--success); color: white; padding: 4px 12px; border-radius: 4px; font-size: 13px; font-weight: 500;">
+                    ✓ Solved
+                </span>
+                {% endif %}
+            </div>
+            
+            <!-- Description -->
+            <p style="color: var(--text-secondary); margin-bottom: 16px; line-height: 1.6;">
+                {{ exercise.description|truncate(150) }}
+            </p>
+            
+            <!-- Metadata -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <span style="background: {% if exercise.difficulty == 'easy' %}var(--success){% elif exercise.difficulty == 'medium' %}var(--warning){% else %}var(--danger){% endif %}; color: white; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; text-transform: uppercase;">
+                    {{ exercise.difficulty }}
+                </span>
+                <small style="color: var(--text-secondary); font-weight: 500;">{{ exercise.points }} points</small>
+            </div>
+            
+            <!-- Progress Bar -->
+            {% if item.best_score > 0 %}
+            <div style="margin-bottom: 16px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
+                    <span style="color: var(--text-secondary);">Best Score</span>
+                    <span style="font-weight: 600; color: {% if item.best_score == 100 %}var(--success){% else %}var(--warning){% endif %};">
+                        {{ item.best_score }}%
+                    </span>
+                </div>
+                <div style="width: 100%; background: var(--bg-tertiary); border-radius: 4px; height: 8px; overflow: hidden;">
+                    <div style="height: 100%; background: {% if item.best_score == 100 %}var(--success){% else %}var(--warning){% endif %}; width: {{ item.best_score }}%; transition: width 0.3s;"></div>
                 </div>
             </div>
+            {% endif %}
+            
+            <!-- Stats -->
+            <div style="display: flex; gap: 16px; margin-bottom: 16px; font-size: 13px; color: var(--text-secondary);">
+                <span><i class="fas fa-code"></i> {{ item.attempt_count }} attempts</span>
+                {% if item.last_attempt %}
+                <span><i class="fas fa-clock"></i> Last: {{ item.last_attempt.strftime('%m/%d %H:%M') }}</span>
+                {% endif %}
+            </div>
+            
+            <!-- Action Button -->
+            <a href="{{ url_for('python_practice.view_exercise', exercise_id=exercise.id) }}" 
+               class="btn btn-primary" 
+               style="margin-top: auto; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <i class="fas fa-play"></i>
+                {% if item.has_solved %}Try Again{% else %}Start Exercise{% endif %}
+            </a>
         </div>
         {% endfor %}
     </div>
     {% else %}
-    <div class="alert alert-info">
-        <p class="mb-0">No Python exercises available for this lesson yet.</p>
-    </div>
-    {% endif %}
-    
-    <div class="mt-4">
-        <a href="{{ url_for('learning.view_lesson', lesson_id=lesson.id) }}" class="btn btn-secondary">
-            ← Back to Lesson
+    <div style="text-align: center; padding: 64px 16px; color: var(--text-secondary);">
+        <i class="fas fa-code" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+        <p style="font-size: 18px;">No exercises available for this lesson yet.</p>
+        <a href="{{ url_for('learning.tutorial_overview', tutorial_id=tutorial.id) }}" 
+           class="btn btn-primary" 
+           style="margin-top: 16px;">
+            <i class="fas fa-arrow-left"></i> Back to Curriculum
         </a>
     </div>
+    {% endif %}
 </div>
 {% endblock %}
