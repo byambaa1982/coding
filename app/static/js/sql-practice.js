@@ -1,0 +1,1102 @@
+/**
+ * SQL Practice JavaScript - Enhanced Edition
+ * Professional UI/UX with advanced features
+ */
+
+console.log('🚀 SQL Practice Editor - Enhanced Edition loaded!');
+
+// Global Variables
+let sqlEditor;
+let currentSessionId;
+let queryHistory = [];
+let currentTheme = 'light';
+let currentResultData = null;
+
+// Constants
+const MAX_HISTORY = 50;
+const STORAGE_KEY = 'sql_query_history';
+const THEME_KEY = 'sql_editor_theme';
+
+/**
+ * Initialize SQL Editor (Monaco Editor)
+ */
+function initSQLEditor() {
+    // Load saved theme
+    currentTheme = localStorage.getItem(THEME_KEY) || 'light';
+    applyTheme(currentTheme);
+    
+    require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
+    
+    require(['vs/editor/editor.main'], function () {
+        const editorTheme = currentTheme === 'dark' ? 'vs-dark' : 'vs';
+        
+        sqlEditor = monaco.editor.create(document.getElementById('sql-editor'), {
+            value: '-- Welcome to SQL Practice Editor!\n-- Write your SQL query here and press Ctrl+Enter to execute\n\nSELECT * FROM employees LIMIT 10;',
+            language: 'sql',
+            theme: editorTheme,
+            automaticLayout: true,
+            minimap: { enabled: false },
+            fontSize: 14,
+            lineNumbers: 'on',
+            scrollBeyondLastLine: false,
+            wordWrap: 'on',
+            suggestOnTriggerCharacters: true,
+            quickSuggestions: true,
+            formatOnPaste: true,
+            formatOnType: true,
+            tabSize: 2,
+            renderWhitespace: 'selection',
+            cursorBlinking: 'smooth',
+            smoothScrolling: true,
+            mouseWheelZoom: true,
+        });
+
+        // Add keyboard shortcuts
+        setupKeyboardShortcuts();
+        
+        // Track editor changes
+        sqlEditor.onDidChangeModelContent(updateEditorInfo);
+        sqlEditor.onDidChangeCursorPosition(updateCursorPosition);
+        
+        // Load schema on init
+        loadSchema();
+        
+        // Load query history
+        loadQueryHistory();
+    });
+
+    // Event Listeners
+    setupEventListeners();
+}
+
+/**
+ * Setup Event Listeners
+ */
+function setupEventListeners() {
+    // Button listeners
+    document.getElementById('run-query-btn').addEventListener('click', runQuery);
+    document.getElementById('refresh-schema-btn').addEventListener('click', loadSchema);
+    document.getElementById('reset-db-btn').addEventListener('click', resetDatabase);
+    document.getElementById('format-btn').addEventListener('click', formatQuery);
+    document.getElementById('clear-btn').addEventListener('click', clearEditor);
+    document.getElementById('save-query-btn').addEventListener('click', saveQuery);
+    
+    // Theme toggle
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+    
+    // Modal triggers
+    document.getElementById('history-btn').addEventListener('click', () => openModal('history-modal'));
+    document.getElementById('shortcuts-btn').addEventListener('click', () => openModal('shortcuts-modal'));
+    
+    // Modal close buttons
+    document.querySelectorAll('.sql-modal-close').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.target.closest('.sql-modal').classList.remove('active');
+        });
+    });
+    
+    // Close modal on backdrop click
+    document.querySelectorAll('.sql-modal').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('active');
+            }
+        });
+    });
+    
+    // Sidebar toggle
+    document.getElementById('toggle-sidebar-btn').addEventListener('click', toggleSidebar);
+    
+    // Schema search
+    document.getElementById('schema-search').addEventListener('input', filterSchema);
+    
+    // Example queries
+    document.querySelectorAll('.sql-example-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const query = e.target.dataset.query;
+            sqlEditor.setValue(query);
+        });
+    });
+    
+    // Export buttons
+    document.getElementById('export-csv-btn').addEventListener('click', exportAsCSV);
+    document.getElementById('export-json-btn').addEventListener('click', exportAsJSON);
+    document.getElementById('copy-results-btn').addEventListener('click', copyResults);
+    
+    // Result view tabs
+    document.querySelectorAll('.sql-results-tab').forEach(tab => {
+        tab.addEventListener('click', (e) => {
+            switchResultView(e.target.closest('.sql-results-tab').dataset.view);
+        });
+    });
+}
+
+/**
+ * Setup Keyboard Shortcuts
+ */
+function setupKeyboardShortcuts() {
+    // Ctrl+Enter: Run query
+    sqlEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+        runQuery();
+    });
+    
+    // Ctrl+K: Clear editor
+    sqlEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK, () => {
+        clearEditor();
+    });
+    
+    // Ctrl+S: Save query
+    sqlEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+        saveQuery();
+    });
+}
+
+/**
+ * Run SQL Query
+ */
+async function runQuery() {
+    const query = sqlEditor.getValue().trim();
+    const btn = document.getElementById('run-query-btn');
+    
+    if (!query) {
+        showToast('Please enter a SQL query', 'warning');
+        return;
+    }
+
+    // Update button state
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Running...</span>';
+
+    try {
+        const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+        
+        const response = await fetch('/sql-practice/execute', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'csrf_token': csrfToken,
+                'query': query
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            displayResults(result);
+            addToHistory(query, result);
+            showToast('Query executed successfully', 'success');
+        } else {
+            displayError(result);
+            showToast('Query failed', 'error');
+        }
+
+    } catch (error) {
+        showToast('Network error: ' + error.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-play"></i> <span>Run Query</span>';
+    }
+}
+
+/**
+ * Display Query Results
+ */
+function displayResults(result) {
+    const container = document.getElementById('results-container');
+    currentResultData = result;
+    
+    // Update stats
+    const statsEl = document.getElementById('query-stats');
+    if (statsEl) {
+        statsEl.textContent = `${result.row_count} rows in ${result.execution_time}s`;
+    }
+
+    if (!result.results || result.results.length === 0) {
+        container.innerHTML = `
+            <div class="sql-empty-state">
+                <div class="sql-empty-icon">
+                    <i class="fas fa-check-circle" style="color: var(--sql-success);"></i>
+                </div>
+                <h3>Query Executed Successfully</h3>
+                <p>${result.row_count} rows affected in ${result.execution_time}s</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Build table
+    displayTableView(result);
+}
+
+/**
+ * Display Table View
+ */
+function displayTableView(result) {
+    const container = document.getElementById('results-container');
+    const columns = result.columns;
+    const rows = result.results;
+
+    let html = '<div class="table-responsive">';
+    html += '<table class="sql-results-table">';
+    
+    // Header
+    html += '<thead><tr>';
+    columns.forEach(col => {
+        html += `<th>${escapeHtml(col)}</th>`;
+    });
+    html += '</tr></thead>';
+    
+    // Body
+    html += '<tbody>';
+    rows.forEach((row, idx) => {
+        html += `<tr>`;
+        columns.forEach(col => {
+            const value = row[col];
+            if (value === null || value === undefined) {
+                html += `<td><span style="color: var(--sql-text-muted); font-style: italic;">NULL</span></td>`;
+            } else {
+                html += `<td>${escapeHtml(String(value))}</td>`;
+            }
+        });
+        html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+
+    container.innerHTML = html;
+}
+
+/**
+ * Display Error
+ */
+function displayError(result) {
+    const container = document.getElementById('results-container');
+    
+    container.innerHTML = `
+        <div class="sql-error-container">
+            <div class="sql-error-title">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>Query Error</span>
+            </div>
+            <div class="sql-error-message">${escapeHtml(result.error || 'Unknown error occurred')}</div>
+            ${result.warnings && result.warnings.length > 0 ? `
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--sql-border);">
+                    <div style="font-weight: 600; font-size: 0.875rem; margin-bottom: 0.5rem;">Warnings:</div>
+                    <ul style="margin: 0; padding-left: 1.5rem;">
+                        ${result.warnings.map(w => `<li style="font-size: 0.875rem;">${escapeHtml(w)}</li>`).join('')}
+                    </ul>
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+/**
+ * Load Database Schema
+ */
+async function loadSchema() {
+    const container = document.getElementById('schema-container');
+    container.innerHTML = `
+        <div class="sql-loading-state">
+            <div class="sql-spinner"></div>
+            <p>Loading schema...</p>
+            <small>First load may take 15-30 seconds</small>
+        </div>
+    `;
+
+    try {
+        const response = await fetch('/sql-practice/schema');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+
+        if (result.error) {
+            container.innerHTML = `
+                <div class="sql-empty-state-sm">
+                    <i class="fas fa-exclamation-circle" style="color: var(--sql-danger);"></i>
+                    <p>Failed to load schema</p>
+                    <small>${escapeHtml(result.error)}</small>
+                    <button onclick="loadSchema()" class="btn-secondary" style="margin-top: 1rem;">
+                        <i class="fas fa-redo"></i> Retry
+                    </button>
+                </div>
+            `;
+        } else if (result.success) {
+            displaySchema(result.tables);
+            showToast('Schema loaded successfully', 'success');
+        } else {
+            throw new Error('Failed to load schema');
+        }
+    } catch (error) {
+        console.error('Schema loading error:', error);
+        container.innerHTML = `
+            <div class="sql-empty-state-sm">
+                <i class="fas fa-exclamation-circle" style="color: var(--sql-danger);"></i>
+                <p>Error loading schema</p>
+                <small>${escapeHtml(error.message)}</small>
+                <button onclick="loadSchema()" class="btn-secondary" style="margin-top: 1rem;">
+                    <i class="fas fa-redo"></i> Retry
+                </button>
+            </div>
+        `;
+    }
+}
+
+/**
+ * Display Schema
+ */
+function displaySchema(tables) {
+    const container = document.getElementById('schema-container');
+    
+    if (!tables || Object.keys(tables).length === 0) {
+        container.innerHTML = `
+            <div class="sql-empty-state-sm">
+                <i class="fas fa-database"></i>
+                <p>No tables found</p>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '';
+    
+    Object.entries(tables).forEach(([tableName, tableInfo]) => {
+        html += `
+            <div class="sql-schema-table" data-table="${tableName}">
+                <div class="sql-schema-table-header" onclick="toggleSchemaTable('${tableName}')">
+                    <div class="sql-schema-table-name">
+                        <i class="fas fa-table"></i>
+                        <span>${escapeHtml(tableName)}</span>
+                    </div>
+                    <span class="sql-schema-table-count">${tableInfo.row_count} rows</span>
+                </div>
+                <div class="sql-schema-table-body">
+                    ${tableInfo.columns.map(col => `
+                        <div class="sql-schema-column">
+                            <span class="sql-schema-column-name">${escapeHtml(col.name)}</span>
+                            <span class="sql-schema-column-type">${escapeHtml(col.type)}</span>
+                        </div>
+                    `).join('')}
+                    <button onclick="previewTable('${tableName}')" class="sql-schema-preview-btn">
+                        <i class="fas fa-eye"></i> Preview Data
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+/**
+ * Toggle Schema Table
+ */
+function toggleSchemaTable(tableName) {
+    const table = document.querySelector(`.sql-schema-table[data-table="${tableName}"]`);
+    if (table) {
+        table.classList.toggle('expanded');
+    }
+}
+
+/**
+ * Preview Table Data
+ */
+async function previewTable(tableName) {
+    try {
+        showToast(`Loading preview of ${tableName}...`, 'info');
+        const response = await fetch(`/sql-practice/preview/${tableName}?limit=10`);
+        const result = await response.json();
+
+        if (result.success) {
+            displayResults(result);
+            showToast('Preview loaded', 'success');
+        } else {
+            showToast('Failed to preview table: ' + result.error, 'error');
+        }
+    } catch (error) {
+        showToast('Error previewing table: ' + error.message, 'error');
+    }
+}
+
+/**
+ * Reset Database
+ */
+async function resetDatabase() {
+    if (!confirm('Are you sure you want to reset the database? All changes will be lost.')) {
+        return;
+    }
+
+    const btn = document.getElementById('reset-db-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Resetting...</span>';
+
+    try {
+        const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+        
+        const response = await fetch('/sql-practice/reset-database', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'csrf_token': csrfToken
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('Database reset successfully', 'success');
+            loadSchema();
+        } else {
+            showToast('Failed to reset database: ' + result.error, 'error');
+        }
+
+    } catch (error) {
+        showToast('Error resetting database: ' + error.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-undo"></i> <span>Reset DB</span>';
+    }
+}
+
+/**
+ * Format SQL Query
+ */
+function formatQuery() {
+    if (sqlEditor) {
+        sqlEditor.getAction('editor.action.formatDocument').run();
+        showToast('Query formatted', 'success');
+    }
+}
+
+/**
+ * Clear Editor
+ */
+function clearEditor() {
+    if (confirm('Clear the editor?')) {
+        sqlEditor.setValue('-- Write your SQL query here\n');
+        sqlEditor.focus();
+        showToast('Editor cleared', 'success');
+    }
+}
+
+/**
+ * Save Query
+ */
+function saveQuery() {
+    const query = sqlEditor.getValue().trim();
+    if (!query) {
+        showToast('Nothing to save', 'warning');
+        return;
+    }
+    
+    const filename = prompt('Enter filename:', 'query.sql');
+    if (filename) {
+        downloadFile(query, filename);
+        showToast('Query saved', 'success');
+    }
+}
+
+/**
+ * Initialize SQL Exercise (for exercise pages)
+ */
+function initSQLExercise(exerciseId, starterCode) {
+    // Load saved theme
+    currentTheme = localStorage.getItem(THEME_KEY) || 'light';
+    applyTheme(currentTheme);
+    
+    require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
+    
+    require(['vs/editor/editor.main'], function () {
+        const editorTheme = currentTheme === 'dark' ? 'vs-dark' : 'vs';
+        
+        sqlEditor = monaco.editor.create(document.getElementById('sql-editor'), {
+            value: starterCode || '-- Write your SQL query here\nSELECT ',
+            language: 'sql',
+            theme: editorTheme,
+            automaticLayout: true,
+            minimap: { enabled: false },
+            fontSize: 14,
+            lineNumbers: 'on',
+            scrollBeyondLastLine: false,
+            wordWrap: 'on'
+        });
+
+        // Load schema
+        loadSchema();
+    });
+
+    // Event Listeners for exercise page
+    if (document.getElementById('test-query-btn')) {
+        document.getElementById('test-query-btn').addEventListener('click', testQuery);
+    }
+    if (document.getElementById('submit-solution-btn')) {
+        document.getElementById('submit-solution-btn').addEventListener('click', () => submitSolution(exerciseId));
+    }
+    if (document.getElementById('show-hints-btn')) {
+        document.getElementById('show-hints-btn').addEventListener('click', toggleHints);
+    }
+    if (document.getElementById('toggle-schema-btn')) {
+        document.getElementById('toggle-schema-btn').addEventListener('click', toggleSchemaPanel);
+    }
+}
+
+/**
+ * Test Query (for exercises)
+ */
+async function testQuery() {
+    const query = sqlEditor.getValue();
+    const btn = document.getElementById('test-query-btn');
+    
+    if (!query.trim()) {
+        showToast('Please enter a SQL query', 'warning');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Testing...';
+
+    try {
+        const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+        
+        const response = await fetch('/sql-practice/execute', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'csrf_token': csrfToken,
+                'query': query
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            displayResults(result);
+        } else {
+            displayError(result);
+        }
+
+    } catch (error) {
+        showToast('Network error: ' + error.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-flask mr-1"></i> Test Query';
+    }
+}
+
+/**
+ * Submit Exercise Solution
+ */
+async function submitSolution(exerciseId) {
+    const query = sqlEditor.getValue();
+    const btn = document.getElementById('submit-solution-btn');
+    
+    if (!query.trim()) {
+        showToast('Please enter a SQL query before submitting', 'warning');
+        return;
+    }
+
+    if (!confirm('Are you ready to submit your solution?')) {
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Submitting...';
+
+    try {
+        const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+        
+        const response = await fetch('/sql-practice/submit-exercise', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'csrf_token': csrfToken,
+                'exercise_id': exerciseId,
+                'query': query
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            displaySubmissionResult(result);
+        } else {
+            showToast('Submission failed: ' + (result.errors ? result.errors.join(', ') : 'Unknown error'), 'error');
+        }
+
+    } catch (error) {
+        showToast('Network error: ' + error.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check mr-1"></i> Submit Solution';
+    }
+}
+
+/**
+ * Display Submission Result
+ */
+function displaySubmissionResult(result) {
+    const container = document.getElementById('feedback-container');
+    if (!container) return;
+    
+    container.classList.remove('hidden');
+
+    if (result.passed) {
+        container.innerHTML = `
+            <div class="bg-green-50 border-l-4 border-green-400 p-6 rounded-r-lg">
+                <div class="flex items-start">
+                    <i class="fas fa-check-circle text-green-400 text-3xl mr-4"></i>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-medium text-green-800">Congratulations! 🎉</h3>
+                        <p class="mt-2 text-green-700">${result.feedback}</p>
+                        <div class="mt-4">
+                            <a href="${window.location.href}" class="inline-block px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded">
+                                Next Exercise
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    } else {
+        container.innerHTML = `
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-r-lg">
+                <div class="flex items-start">
+                    <i class="fas fa-times-circle text-yellow-400 text-3xl mr-4"></i>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-medium text-yellow-800">Not Quite Right</h3>
+                        <p class="mt-2 text-yellow-700">${result.feedback}</p>
+                        <div class="mt-4">
+                            <button onclick="document.getElementById('show-hints-btn').click()" class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded">
+                                Show Hints
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Display execution results
+    if (result.execution_result) {
+        displayResults(result.execution_result);
+    }
+
+    // Scroll to feedback
+    container.scrollIntoView({ behavior: 'smooth' });
+}
+
+/**
+ * Toggle Hints
+ */
+function toggleHints() {
+    const container = document.getElementById('hints-container');
+    if (!container) return;
+    
+    const btn = document.getElementById('show-hints-btn');
+    
+    container.classList.toggle('hidden');
+    
+    if (container.classList.contains('hidden')) {
+        btn.innerHTML = '<i class="fas fa-lightbulb mr-1"></i> Show Hints';
+    } else {
+        btn.innerHTML = '<i class="fas fa-lightbulb mr-1"></i> Hide Hints';
+    }
+}
+
+/**
+ * Toggle Schema Panel
+ */
+function toggleSchemaPanel() {
+    const panel = document.getElementById('schema-panel');
+    if (!panel) return;
+    
+    const btn = document.getElementById('toggle-schema-btn');
+    const icon = btn.querySelector('i');
+    
+    panel.classList.toggle('hidden');
+    icon.classList.toggle('fa-chevron-down');
+    icon.classList.toggle('fa-chevron-up');
+}
+
+/**
+ * Theme Management
+ */
+function toggleTheme() {
+    currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+    applyTheme(currentTheme);
+    localStorage.setItem(THEME_KEY, currentTheme);
+    
+    // Update Monaco editor theme
+    if (sqlEditor) {
+        monaco.editor.setTheme(currentTheme === 'dark' ? 'vs-dark' : 'vs');
+    }
+    
+    showToast(`Switched to ${currentTheme} mode`, 'success');
+}
+
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    const icon = document.querySelector('#theme-toggle i');
+    if (icon) {
+        icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+    }
+}
+
+/**
+ * Sidebar Management
+ */
+function toggleSidebar() {
+    const sidebar = document.getElementById('schema-sidebar');
+    sidebar.classList.toggle('collapsed');
+    
+    const icon = document.querySelector('#toggle-sidebar-btn i');
+    if (icon) {
+        icon.className = sidebar.classList.contains('collapsed') ? 'fas fa-chevron-right' : 'fas fa-chevron-left';
+    }
+}
+
+/**
+ * Filter Schema
+ */
+function filterSchema() {
+    const searchTerm = document.getElementById('schema-search').value.toLowerCase();
+    const tables = document.querySelectorAll('.sql-schema-table');
+    
+    tables.forEach(table => {
+        const tableName = table.dataset.table.toLowerCase();
+        if (tableName.includes(searchTerm)) {
+            table.style.display = '';
+        } else {
+            table.style.display = 'none';
+        }
+    });
+}
+
+/**
+ * Query History Management
+ */
+function loadQueryHistory() {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+        try {
+            queryHistory = JSON.parse(stored);
+        } catch (e) {
+            queryHistory = [];
+        }
+    }
+}
+
+function addToHistory(query, result) {
+    const historyItem = {
+        query: query,
+        timestamp: new Date().toISOString(),
+        rowCount: result.row_count,
+        executionTime: result.execution_time,
+        success: result.success
+    };
+    
+    queryHistory.unshift(historyItem);
+    
+    // Keep only last MAX_HISTORY items
+    if (queryHistory.length > MAX_HISTORY) {
+        queryHistory = queryHistory.slice(0, MAX_HISTORY);
+    }
+    
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(queryHistory));
+}
+
+function displayHistory() {
+    const container = document.getElementById('history-content');
+    
+    if (queryHistory.length === 0) {
+        container.innerHTML = `
+            <div class="sql-empty-state-sm">
+                <i class="fas fa-clock"></i>
+                <p>No query history yet</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '<div style="display: flex; flex-direction: column; gap: 0.75rem;">';
+    
+    queryHistory.forEach((item, index) => {
+        const date = new Date(item.timestamp);
+        const timeStr = date.toLocaleString();
+        
+        html += `
+            <div style="padding: 1rem; background: var(--sql-bg-primary); border-radius: var(--sql-radius); border-left: 3px solid ${item.success ? 'var(--sql-success)' : 'var(--sql-danger)'};">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                    <div style="flex: 1;">
+                        <div style="font-size: 0.75rem; color: var(--sql-text-tertiary); margin-bottom: 0.25rem;">${timeStr}</div>
+                        <div style="font-size: 0.75rem; color: var(--sql-text-secondary);">
+                            ${item.rowCount} rows in ${item.executionTime}s
+                        </div>
+                    </div>
+                    <button onclick="loadHistoryQuery(${index})" class="btn-icon-sm" title="Load Query">
+                        <i class="fas fa-arrow-up"></i>
+                    </button>
+                </div>
+                <pre style="font-size: 0.75rem; font-family: monospace; margin: 0; overflow-x: auto; white-space: pre-wrap; color: var(--sql-text-primary);">${escapeHtml(item.query)}</pre>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function loadHistoryQuery(index) {
+    const item = queryHistory[index];
+    if (item && sqlEditor) {
+        sqlEditor.setValue(item.query);
+        document.getElementById('history-modal').classList.remove('active');
+        showToast('Query loaded from history', 'success');
+    }
+}
+
+/**
+ * Export Functions
+ */
+function exportAsCSV() {
+    if (!currentResultData || !currentResultData.results) {
+        showToast('No results to export', 'warning');
+        return;
+    }
+    
+    const columns = currentResultData.columns;
+    const rows = currentResultData.results;
+    
+    let csv = columns.map(c => `"${c}"`).join(',') + '\n';
+    
+    rows.forEach(row => {
+        const values = columns.map(col => {
+            const val = row[col];
+            if (val === null || val === undefined) return '';
+            return `"${String(val).replace(/"/g, '""')}"`;
+        });
+        csv += values.join(',') + '\n';
+    });
+    
+    downloadFile(csv, 'query_results.csv');
+    showToast('Exported as CSV', 'success');
+}
+
+function exportAsJSON() {
+    if (!currentResultData || !currentResultData.results) {
+        showToast('No results to export', 'warning');
+        return;
+    }
+    
+    const json = JSON.stringify(currentResultData.results, null, 2);
+    downloadFile(json, 'query_results.json');
+    showToast('Exported as JSON', 'success');
+}
+
+function copyResults() {
+    if (!currentResultData || !currentResultData.results) {
+        showToast('No results to copy', 'warning');
+        return;
+    }
+    
+    const text = JSON.stringify(currentResultData.results, null, 2);
+    
+    navigator.clipboard.writeText(text).then(() => {
+        showToast('Results copied to clipboard', 'success');
+    }).catch(() => {
+        showToast('Failed to copy', 'error');
+    });
+}
+
+/**
+ * Switch Result View
+ */
+function switchResultView(view) {
+    // Update active tab
+    document.querySelectorAll('.sql-results-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    const activeTab = document.querySelector(`.sql-results-tab[data-view="${view}"]`);
+    if (activeTab) activeTab.classList.add('active');
+    
+    if (!currentResultData) return;
+    
+    const container = document.getElementById('results-container');
+    
+    switch(view) {
+        case 'table':
+            displayTableView(currentResultData);
+            break;
+        case 'json':
+            displayJSONView(currentResultData);
+            break;
+        case 'chart':
+            displayChartView(currentResultData);
+            break;
+    }
+}
+
+function displayJSONView(result) {
+    const container = document.getElementById('results-container');
+    const json = JSON.stringify(result.results, null, 2);
+    
+    container.innerHTML = `
+        <pre style="margin: 0; padding: 1rem; background: var(--sql-bg-primary); border-radius: var(--sql-radius); overflow-x: auto; font-size: 0.875rem; color: var(--sql-text-primary);">${escapeHtml(json)}</pre>
+    `;
+}
+
+function displayChartView(result) {
+    const container = document.getElementById('results-container');
+    container.innerHTML = `
+        <div class="sql-empty-state">
+            <div class="sql-empty-icon">
+                <i class="fas fa-chart-bar"></i>
+            </div>
+            <h3>Chart Visualization</h3>
+            <p>Chart visualization coming soon!</p>
+            <small>This feature will allow you to create various charts from your query results</small>
+        </div>
+    `;
+}
+
+/**
+ * Editor Info Updates
+ */
+function updateEditorInfo() {
+    const model = sqlEditor.getModel();
+    const lineCount = model.getLineCount();
+    const charCount = model.getValueLength();
+    
+    const lineEl = document.getElementById('line-count');
+    const charEl = document.getElementById('char-count');
+    
+    if (lineEl) lineEl.textContent = `Lines: ${lineCount}`;
+    if (charEl) charEl.textContent = `Characters: ${charCount}`;
+}
+
+function updateCursorPosition() {
+    const position = sqlEditor.getPosition();
+    const posEl = document.getElementById('cursor-position');
+    if (posEl) posEl.textContent = `Ln ${position.lineNumber}, Col ${position.column}`;
+}
+
+/**
+ * Modal Management
+ */
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('active');
+        
+        // Load content based on modal
+        if (modalId === 'history-modal') {
+            displayHistory();
+        }
+    }
+}
+
+/**
+ * Toast Notifications
+ */
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    
+    const icons = {
+        success: 'fa-check-circle',
+        error: 'fa-exclamation-circle',
+        warning: 'fa-exclamation-triangle',
+        info: 'fa-info-circle'
+    };
+    
+    const toast = document.createElement('div');
+    toast.className = `sql-toast ${type}`;
+    toast.innerHTML = `
+        <div class="sql-toast-icon">
+            <i class="fas ${icons[type] || icons.info}"></i>
+        </div>
+        <div class="sql-toast-content">
+            <div class="sql-toast-message">${escapeHtml(message)}</div>
+        </div>
+    `;
+    
+    container.appendChild(toast);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+/**
+ * Utility Functions
+ */
+function downloadFile(content, filename) {
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Add CSS animations
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideOut {
+        from {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        to {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+    }
+    
+    .sql-empty-state-sm {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
+        text-align: center;
+        color: var(--sql-text-tertiary);
+    }
+    
+    .sql-empty-state-sm i {
+        font-size: 2rem;
+        margin-bottom: 0.75rem;
+        opacity: 0.6;
+    }
+    
+    .sql-empty-state-sm p {
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+    
+    .sql-empty-state-sm small {
+        font-size: 0.75rem;
+        color: var(--sql-text-muted);
+    }
+`;
+document.head.appendChild(style);

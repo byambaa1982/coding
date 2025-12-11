@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}SQL Challenges{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-7xl mx-auto px-4">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">SQL Challenges</h1>
+            <p class="text-gray-600 mt-2">Practice and master your SQL skills with these challenges</p>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="mb-6 flex space-x-2 border-b">
+            <button class="filter-tab active px-4 py-2 font-medium border-b-2 border-blue-600 text-blue-600" data-filter="all">
+                All Challenges
+            </button>
+            <button class="filter-tab px-4 py-2 font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900" data-filter="easy">
+                Easy
+            </button>
+            <button class="filter-tab px-4 py-2 font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900" data-filter="medium">
+                Medium
+            </button>
+            <button class="filter-tab px-4 py-2 font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900" data-filter="hard">
+                Hard
+            </button>
+            <button class="filter-tab px-4 py-2 font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900" data-filter="completed">
+                Completed
+            </button>
+        </div>
+
+        <!-- Challenges Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for exercise in exercises %}
+            <div class="challenge-card bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6" 
+                 data-difficulty="{{ exercise.difficulty }}"
+                 data-completed="{{ 'true' if submission_map.get(exercise.id) and submission_map.get(exercise.id).status == 'passed' else 'false' }}">
+                
+                <!-- Header -->
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex-1">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                            <a href="{{ url_for('sql_practice.exercise', exercise_id=exercise.id) }}" class="hover:text-blue-600">
+                                {{ exercise.title }}
+                            </a>
+                        </h3>
+                    </div>
+                    
+                    {% if submission_map.get(exercise.id) and submission_map.get(exercise.id).status == 'passed' %}
+                    <div class="ml-2">
+                        <i class="fas fa-check-circle text-green-500 text-xl"></i>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Description -->
+                <p class="text-sm text-gray-600 mb-4 line-clamp-3">
+                    {{ exercise.description|striptags|truncate(120) }}
+                </p>
+
+                <!-- Meta Info -->
+                <div class="flex items-center justify-between text-sm">
+                    <span class="px-3 py-1 rounded-full font-medium
+                        {% if exercise.difficulty == 'easy' %}bg-green-100 text-green-800
+                        {% elif exercise.difficulty == 'medium' %}bg-yellow-100 text-yellow-800
+                        {% else %}bg-red-100 text-red-800{% endif %}">
+                        {{ exercise.difficulty|capitalize }}
+                    </span>
+                    
+                    <span class="text-gray-600">
+                        <i class="fas fa-star text-yellow-400"></i> {{ exercise.points }} pts
+                    </span>
+                </div>
+
+                <!-- Progress Indicator -->
+                {% if submission_map.get(exercise.id) %}
+                <div class="mt-4 pt-4 border-t">
+                    <div class="flex items-center justify-between text-xs text-gray-600">
+                        <span>
+                            {% set sub = submission_map.get(exercise.id) %}
+                            {% if sub.status == 'passed' %}
+                            <i class="fas fa-check text-green-500"></i> Completed
+                            {% else %}
+                            <i class="fas fa-times text-red-500"></i> Attempted
+                            {% endif %}
+                        </span>
+                        <span>{{ sub.submitted_at.strftime('%b %d') }}</span>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Action Button -->
+                <div class="mt-4">
+                    <a href="{{ url_for('sql_practice.exercise', exercise_id=exercise.id) }}" 
+                       class="block w-full text-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium">
+                        {% if submission_map.get(exercise.id) and submission_map.get(exercise.id).status == 'passed' %}
+                        Review Solution
+                        {% else %}
+                        Start Challenge
+                        {% endif %}
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if not exercises %}
+        <div class="text-center py-12">
+            <i class="fas fa-graduation-cap text-gray-300 text-6xl mb-4"></i>
+            <p class="text-gray-600 text-lg">No SQL challenges available yet.</p>
+            <p class="text-gray-500 mt-2">Enroll in SQL courses to access challenges!</p>
+            <a href="{{ url_for('catalog.index') }}" class="mt-6 inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">
+                Browse SQL Courses
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Filter functionality
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            // Update active tab
+            document.querySelectorAll('.filter-tab').forEach(t => {
+                t.classList.remove('active', 'border-blue-600', 'text-blue-600');
+                t.classList.add('border-transparent', 'text-gray-600');
+            });
+            this.classList.add('active', 'border-blue-600', 'text-blue-600');
+            this.classList.remove('border-transparent', 'text-gray-600');
+
+            // Filter cards
+            const filter = this.dataset.filter;
+            document.querySelectorAll('.challenge-card').forEach(card => {
+                const difficulty = card.dataset.difficulty;
+                const completed = card.dataset.completed === 'true';
+                
+                if (filter === 'all') {
+                    card.style.display = 'block';
+                } else if (filter === 'completed') {
+                    card.style.display = completed ? 'block' : 'none';
+                } else {
+                    card.style.display = difficulty === filter ? 'block' : 'none';
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

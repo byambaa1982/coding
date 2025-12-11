@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+
+{% block title %}SQL Practice Editor - CodeLearn{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/editor/editor.main.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/sql-editor.css') }}?v={{ range(1, 9999) | random }}">
+<style>
+    /* Additional Monaco Editor styling to ensure proper rendering */
+    #sql-editor {
+        width: 100%;
+        height: 100%;
+        min-height: 250px;
+        max-height: 400px;
+    }
+    
+    /* Force Monaco to use its styling */
+    .monaco-editor .view-lines {
+        font-family: 'Consolas', 'Courier New', monospace !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sql-editor-container">
+    <!-- Top Bar -->
+    <div class="sql-top-bar">
+        <div class="sql-top-bar-left">
+            <div class="sql-title-section">
+                <i class="fas fa-database sql-icon-pulse"></i>
+                <div>
+                    <h1 class="sql-main-title">SQL Practice Editor</h1>
+                    <p class="sql-subtitle">Write, test, and execute SQL queries in real-time</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="sql-top-bar-right">
+            <div class="theme-switcher">
+                <button id="theme-toggle" class="btn-icon" title="Toggle Theme">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+            <button id="history-btn" class="btn-secondary-outline" title="Query History">
+                <i class="fas fa-history"></i>
+                <span class="btn-text">History</span>
+            </button>
+            <button id="shortcuts-btn" class="btn-secondary-outline" title="Keyboard Shortcuts">
+                <i class="fas fa-keyboard"></i>
+                <span class="btn-text">Shortcuts</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="sql-main-layout">
+        <!-- Left Sidebar: Schema Browser -->
+        <div class="sql-sidebar" id="schema-sidebar">
+            <div class="sql-sidebar-header">
+                <div class="sql-sidebar-title">
+                    <i class="fas fa-sitemap"></i>
+                    <span>Database Schema</span>
+                </div>
+                <div class="sql-sidebar-actions">
+                    <button id="refresh-schema-btn" class="btn-icon-sm" title="Refresh Schema">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button id="toggle-sidebar-btn" class="btn-icon-sm" title="Collapse Sidebar">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="sql-search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="schema-search" placeholder="Search tables...">
+            </div>
+            
+            <div id="schema-container" class="sql-schema-container">
+                <div class="sql-loading-state">
+                    <div class="sql-spinner"></div>
+                    <p>Loading schema...</p>
+                    <small>First load may take 15-30 seconds</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Editor Area -->
+        <div class="sql-editor-area">
+            <!-- Editor Section -->
+            <div class="sql-editor-panel">
+                <div class="sql-editor-header">
+                    <div class="sql-editor-tabs">
+                        <div class="sql-tab active" data-tab="query">
+                            <i class="fas fa-code"></i>
+                            <span>Query Editor</span>
+                        </div>
+                    </div>
+                    
+                    <div class="sql-editor-actions">
+                        <button id="clear-btn" class="btn-icon-sm" title="Clear Editor (Ctrl+K)">
+                            <i class="fas fa-eraser"></i>
+                        </button>
+                        <button id="format-btn" class="btn-icon-sm" title="Format SQL (Shift+Alt+F)">
+                            <i class="fas fa-align-left"></i>
+                        </button>
+                        <div class="sql-divider"></div>
+                        <button id="save-query-btn" class="btn-secondary" title="Save Query (Ctrl+S)">
+                            <i class="fas fa-save"></i>
+                            <span>Save</span>
+                        </button>
+                        <button id="reset-db-btn" class="btn-warning" title="Reset Database">
+                            <i class="fas fa-undo"></i>
+                            <span>Reset DB</span>
+                        </button>
+                        <button id="run-query-btn" class="btn-primary" title="Run Query (Ctrl+Enter)">
+                            <i class="fas fa-play"></i>
+                            <span>Run Query</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="sql-editor-wrapper">
+                    <form id="sql-query-form">
+                        {{ form.hidden_tag() }}
+                        <div id="sql-editor" class="monaco-editor-container"></div>
+                        {{ form.query(class="hidden", id="query-input") }}
+                    </form>
+                    
+                    <!-- Query Info Bar -->
+                    <div class="sql-query-info">
+                        <div class="sql-query-info-left">
+                            <span id="line-count">Lines: 1</span>
+                            <span class="sql-separator">•</span>
+                            <span id="char-count">Characters: 0</span>
+                        </div>
+                        <div class="sql-query-info-right">
+                            <span id="cursor-position">Ln 1, Col 1</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="sql-results-panel">
+                <div class="sql-results-header">
+                    <div class="sql-results-tabs">
+                        <button class="sql-results-tab active" data-view="table">
+                            <i class="fas fa-table"></i>
+                            <span>Table View</span>
+                        </button>
+                        <button class="sql-results-tab" data-view="json">
+                            <i class="fas fa-code"></i>
+                            <span>JSON</span>
+                        </button>
+                        <button class="sql-results-tab" data-view="chart">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>Chart</span>
+                        </button>
+                    </div>
+                    
+                    <div class="sql-results-info">
+                        <div id="query-stats" class="sql-stats-badge"></div>
+                        <div class="sql-results-actions">
+                            <button id="export-csv-btn" class="btn-icon-sm" title="Export as CSV">
+                                <i class="fas fa-file-csv"></i>
+                            </button>
+                            <button id="export-json-btn" class="btn-icon-sm" title="Export as JSON">
+                                <i class="fas fa-file-code"></i>
+                            </button>
+                            <button id="copy-results-btn" class="btn-icon-sm" title="Copy Results">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="results-container" class="sql-results-content">
+                    <div class="sql-empty-state">
+                        <div class="sql-empty-icon">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <h3>Ready to Execute</h3>
+                        <p>Write your SQL query and press <kbd>Ctrl+Enter</kbd> or click Run Query</p>
+                        <div class="sql-quick-examples">
+                            <p class="sql-examples-title">Quick Examples:</p>
+                            <button class="sql-example-btn" data-query="SELECT * FROM employees LIMIT 10;">
+                                View Employees
+                            </button>
+                            <button class="sql-example-btn" data-query="SELECT department, COUNT(*) as count FROM employees GROUP BY department;">
+                                Count by Department
+                            </button>
+                            <button class="sql-example-btn" data-query="SELECT * FROM employees WHERE salary > 50000 ORDER BY salary DESC;">
+                                High Salaries
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Query History Modal -->
+<div id="history-modal" class="sql-modal">
+    <div class="sql-modal-content">
+        <div class="sql-modal-header">
+            <h2><i class="fas fa-history"></i> Query History</h2>
+            <button class="sql-modal-close">&times;</button>
+        </div>
+        <div class="sql-modal-body" id="history-content">
+            <div class="sql-empty-state-sm">
+                <i class="fas fa-clock"></i>
+                <p>No query history yet</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Shortcuts Modal -->
+<div id="shortcuts-modal" class="sql-modal">
+    <div class="sql-modal-content">
+        <div class="sql-modal-header">
+            <h2><i class="fas fa-keyboard"></i> Keyboard Shortcuts</h2>
+            <button class="sql-modal-close">&times;</button>
+        </div>
+        <div class="sql-modal-body">
+            <div class="sql-shortcuts-grid">
+                <div class="sql-shortcut-item">
+                    <kbd>Ctrl</kbd> + <kbd>Enter</kbd>
+                    <span>Run Query</span>
+                </div>
+                <div class="sql-shortcut-item">
+                    <kbd>Shift</kbd> + <kbd>Alt</kbd> + <kbd>F</kbd>
+                    <span>Format SQL</span>
+                </div>
+                <div class="sql-shortcut-item">
+                    <kbd>Ctrl</kbd> + <kbd>S</kbd>
+                    <span>Save Query</span>
+                </div>
+                <div class="sql-shortcut-item">
+                    <kbd>Ctrl</kbd> + <kbd>K</kbd>
+                    <span>Clear Editor</span>
+                </div>
+                <div class="sql-shortcut-item">
+                    <kbd>Ctrl</kbd> + <kbd>/</kbd>
+                    <span>Toggle Comment</span>
+                </div>
+                <div class="sql-shortcut-item">
+                    <kbd>Ctrl</kbd> + <kbd>D</kbd>
+                    <span>Duplicate Line</span>
+                </div>
+                <div class="sql-shortcut-item">
+                    <kbd>Alt</kbd> + <kbd>↑</kbd> / <kbd>↓</kbd>
+                    <span>Move Line</span>
+                </div>
+                <div class="sql-shortcut-item">
+                    <kbd>Ctrl</kbd> + <kbd>F</kbd>
+                    <span>Find</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notifications -->
+<div id="toast-container" class="sql-toast-container"></div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+<script src="{{ url_for('static', filename='js/sql-practice.js') }}?v={{ range(1, 9999) | random }}"></script>
+<script>
+    // Initialize SQL editor when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        initSQLEditor();
+    });
+</script>
+{% endblock %}

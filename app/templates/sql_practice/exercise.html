@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}{{ exercise.title }} - SQL Exercise{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-7xl mx-auto px-4">
+        <!-- Breadcrumb -->
+        <nav class="mb-6 text-sm">
+            <ol class="flex items-center space-x-2 text-gray-600">
+                <li><a href="{{ url_for('account.my_courses') }}" class="hover:text-blue-600">My Courses</a></li>
+                <li><i class="fas fa-chevron-right text-xs"></i></li>
+                <li><a href="{{ url_for('learning.lesson', lesson_id=exercise.lesson_id) }}" class="hover:text-blue-600">Lesson</a></li>
+                <li><i class="fas fa-chevron-right text-xs"></i></li>
+                <li class="text-gray-900 font-medium">Exercise</li>
+            </ol>
+        </nav>
+
+        <div class="grid grid-cols-12 gap-6">
+            <!-- Left: Exercise Description -->
+            <div class="col-span-4 space-y-4">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="px-3 py-1 text-xs font-medium rounded-full
+                            {% if exercise.difficulty == 'easy' %}bg-green-100 text-green-800
+                            {% elif exercise.difficulty == 'medium' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-red-100 text-red-800{% endif %}">
+                            {{ exercise.difficulty|upper }}
+                        </span>
+                        <span class="text-sm text-gray-600">
+                            <i class="fas fa-star text-yellow-400"></i> {{ exercise.points }} points
+                        </span>
+                    </div>
+
+                    <h1 class="text-2xl font-bold text-gray-900 mb-4">{{ exercise.title }}</h1>
+                    
+                    <div class="prose prose-sm max-w-none">
+                        {{ exercise.description|safe }}
+                    </div>
+
+                    {% if exercise.starter_code %}
+                    <div class="mt-6">
+                        <h3 class="text-sm font-semibold text-gray-900 mb-2">Starter Query</h3>
+                        <pre class="bg-gray-50 p-3 rounded text-sm overflow-x-auto"><code>{{ exercise.starter_code }}</code></pre>
+                    </div>
+                    {% endif %}
+
+                    <!-- Hints -->
+                    <div class="mt-6">
+                        <button id="show-hints-btn" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                            <i class="fas fa-lightbulb mr-1"></i> Show Hints
+                        </button>
+                        <div id="hints-container" class="hidden mt-3 space-y-2">
+                            {% if exercise.hints %}
+                                {% for hint in exercise.hints %}
+                                <div class="bg-blue-50 border-l-4 border-blue-400 p-3 text-sm">
+                                    <p class="text-blue-800">{{ hint }}</p>
+                                </div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Previous Submissions -->
+                {% if submissions %}
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Attempts</h3>
+                    <div class="space-y-2">
+                        {% for submission in submissions[:5] %}
+                        <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                            <span class="text-sm text-gray-600">{{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                            <span class="px-2 py-1 text-xs font-medium rounded
+                                {% if submission.status == 'passed' %}bg-green-100 text-green-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ submission.status }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Right: Editor and Results -->
+            <div class="col-span-8 space-y-4">
+                <!-- Schema Browser (Collapsible) -->
+                <div class="bg-white rounded-lg shadow-md">
+                    <button id="toggle-schema-btn" class="w-full px-6 py-3 flex items-center justify-between text-left hover:bg-gray-50">
+                        <h3 class="font-semibold text-gray-900">Database Schema</h3>
+                        <i class="fas fa-chevron-down transition-transform"></i>
+                    </button>
+                    <div id="schema-panel" class="border-t px-6 py-4 max-h-64 overflow-y-auto">
+                        <div id="schema-container" class="space-y-2">
+                            <div class="text-center text-gray-500 py-4">
+                                <i class="fas fa-spinner fa-spin"></i> Loading schema...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SQL Editor -->
+                <div class="bg-white rounded-lg shadow-md">
+                    <div class="border-b px-6 py-3 flex items-center justify-between">
+                        <h3 class="font-semibold text-gray-900">Your Solution</h3>
+                        <div class="flex space-x-2">
+                            <button id="test-query-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">
+                                <i class="fas fa-flask mr-1"></i> Test Query
+                            </button>
+                            <button id="submit-solution-btn" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium">
+                                <i class="fas fa-check mr-1"></i> Submit Solution
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6">
+                        <div id="sql-editor" class="border rounded" style="height: 350px;"></div>
+                    </div>
+                </div>
+
+                <!-- Results -->
+                <div class="bg-white rounded-lg shadow-md">
+                    <div class="border-b px-6 py-3">
+                        <h3 class="font-semibold text-gray-900">Results</h3>
+                    </div>
+                    
+                    <div class="p-6">
+                        <div id="results-container" class="min-h-[200px]">
+                            <div class="text-center text-gray-400 py-12">
+                                <i class="fas fa-table text-4xl mb-3"></i>
+                                <p>Test your query to see results</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feedback -->
+                <div id="feedback-container" class="hidden"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Form (hidden) -->
+<form id="exercise-form" class="hidden">
+    {{ form.hidden_tag() }}
+    {{ form.exercise_id(value=exercise.id) }}
+    {{ form.query(id="query-input") }}
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+<script src="{{ url_for('static', filename='js/sql-practice.js') }}"></script>
+<script>
+    const exerciseId = {{ exercise.id }};
+    const starterCode = {{ exercise.starter_code|tojson if exercise.starter_code else '""' }};
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        initSQLExercise(exerciseId, starterCode);
+    });
+</script>
+{% endblock %}

@@ -7,6 +7,61 @@ from app.celery_app import celery
 from app.python_practice.executor import execute_python_code
 
 
+@celery.task(name='app.tasks.execution_tasks.execute_sql_query_async', bind=True)
+def execute_sql_query_async(self, user_id, session_id, query, read_only=True):
+    """
+    Execute SQL query asynchronously.
+    
+    Args:
+        self: Celery task instance
+        user_id: User ID
+        session_id: Session identifier
+        query: SQL query to execute
+        read_only: If True, only SELECT queries allowed
+        
+    Returns:
+        Execution result dictionary
+    """
+    from app import create_app
+    from app.sql_practice.executor import SQLExecutor
+    
+    app = create_app()
+    
+    with app.app_context():
+        try:
+            # Create executor
+            executor = SQLExecutor(user_id, session_id)
+            
+            # Execute query
+            result = executor.execute(query, read_only=read_only)
+            
+            return result
+            
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e)
+            }
+
+
+@celery.task(name='app.tasks.execution_tasks.cleanup_old_sql_sandboxes')
+def cleanup_old_sql_sandboxes():
+    """
+    Cleanup old SQL sandbox containers (scheduled task).
+    Runs every 2 hours to remove containers older than 2 hours.
+    """
+    from app.sql_practice.sandbox import SQLSandbox
+    
+    try:
+        result = SQLSandbox.cleanup_old_containers(hours=2)
+        return result
+    except Exception as e:
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+
 @celery.task(name='app.tasks.execution_tasks.execute_python_code_async', bind=True)
 def execute_python_code_async(self, submission_id, code, test_cases, timeout=30):
     """

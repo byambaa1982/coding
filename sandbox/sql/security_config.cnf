@@ -1,0 +1,47 @@
+[mysqld]
+# Security Configuration for SQL Sandbox
+
+# Connection limits
+max_connections = 50
+max_user_connections = 10
+
+# Query limits
+max_execution_time = 30000
+# max_statement_time is MariaDB only, not MySQL 8.0
+
+# Memory limits
+max_allowed_packet = 16M
+key_buffer_size = 16M
+sort_buffer_size = 2M
+read_buffer_size = 1M
+read_rnd_buffer_size = 1M
+
+# Disable dangerous features
+local_infile = 0
+skip_symbolic_links = 1
+
+# Enable query logging for monitoring
+general_log = 0
+slow_query_log = 1
+slow_query_log_file = /var/log/mysql/slow-query.log
+long_query_time = 5
+
+# Character set
+character_set_server = utf8mb4
+collation_server = utf8mb4_unicode_ci
+
+# Disable file operations
+secure_file_priv = NULL
+
+# InnoDB settings
+innodb_buffer_pool_size = 128M
+innodb_log_file_size = 64M
+innodb_flush_log_at_trx_commit = 2
+innodb_lock_wait_timeout = 10
+
+# Disable external connections to system databases
+skip_name_resolve = 1
+
+# Timeout settings
+interactive_timeout = 300
+wait_timeout = 300

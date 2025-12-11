@@ -220,8 +220,9 @@ class Exercise(db.Model):
     # Code/Query setup
     starter_code = db.Column(db.Text, nullable=True)
     solution_code = db.Column(db.Text, nullable=True)
-    test_cases = db.Column(db.Text, nullable=True)  # JSON string
+    test_cases = db.Column(db.Text, nullable=True)  # JSON string for Python test cases
     hints = db.Column(db.Text, nullable=True)  # JSON array
+    expected_output = db.Column(db.Text, nullable=True)  # JSON for expected results (SQL exercises)
     
     # SQL-specific
     database_schema = db.Column(db.Text, nullable=True)  # DDL for SQL exercises
