@@ -243,6 +243,69 @@ class Exercise(db.Model):
         return f'<Exercise {self.title}>'
 
 
+class ExerciseSubmission(db.Model):
+    """Exercise submission model for tracking code execution results."""
+    
+    __tablename__ = 'exercise_submissions'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('tutorial_users.id'), nullable=False)
+    exercise_id = db.Column(db.Integer, db.ForeignKey('exercises.id'), nullable=False)
+    enrollment_id = db.Column(db.Integer, db.ForeignKey('tutorial_enrollments.id'), nullable=True)
+    
+    # Submission info
+    submitted_code = db.Column(db.Text, nullable=False)
+    language = db.Column(db.String(20), default='python')  # 'python' or 'sql'
+    
+    # Execution results
+    status = db.Column(db.String(20), nullable=False, default='pending', index=True)  # 'pending', 'passed', 'failed', 'error', 'timeout'
+    output = db.Column(db.Text, nullable=True)  # stdout
+    error_message = db.Column(db.Text, nullable=True)  # stderr or exception
+    test_results = db.Column(db.Text, nullable=True)  # JSON: test case results
+    
+    # Scoring
+    tests_passed = db.Column(db.Integer, default=0)
+    tests_failed = db.Column(db.Integer, default=0)
+    score = db.Column(db.Numeric(5, 2), default=0.00)
+    
+    # Performance metrics
+    execution_time_ms = db.Column(db.Integer, nullable=True)
+    memory_used_mb = db.Column(db.Numeric(10, 2), nullable=True)
+    
+    # Security & validation
+    is_flagged = db.Column(db.Boolean, default=False)  # Flagged for suspicious code
+    flagged_reason = db.Column(db.String(500), nullable=True)
+    ip_address = db.Column(db.String(50), nullable=True)
+    
+    # Timestamps
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    executed_at = db.Column(db.DateTime, nullable=True)
+    
+    # Relationships
+    user = db.relationship('TutorialUser', backref=db.backref('exercise_submissions', lazy='dynamic'))
+    exercise = db.relationship('Exercise', backref=db.backref('submissions', lazy='dynamic'))
+    enrollment = db.relationship('TutorialEnrollment', backref=db.backref('exercise_submissions', lazy='dynamic'))
+    
+    def __repr__(self):
+        return f'<ExerciseSubmission User:{self.user_id} Exercise:{self.exercise_id} Status:{self.status}>'
+    
+    def mark_as_passed(self):
+        """Mark submission as passed and update enrollment progress."""
+        if self.status == 'passed' and self.enrollment:
+            # Check if this is the first successful submission for this exercise
+            previous_success = ExerciseSubmission.query.filter(
+                ExerciseSubmission.user_id == self.user_id,
+                ExerciseSubmission.exercise_id == self.exercise_id,
+                ExerciseSubmission.status == 'passed',
+                ExerciseSubmission.id < self.id
+            ).first()
+            
+            if not previous_success:
+                # First time passing this exercise, increment count
+                self.enrollment.exercises_completed += 1
+                db.session.commit()
+
+
 class TutorialEnrollment(db.Model):
     """Enrollment model for user course access."""
     

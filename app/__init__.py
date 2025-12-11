@@ -44,6 +44,7 @@ def create_app(config_name='development'):
     from app.payment import payment_bp
     from app.account import account_bp
     from app.learning import learning_bp
+    from app.python_practice import python_practice_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(main_bp)
@@ -52,6 +53,7 @@ def create_app(config_name='development'):
     app.register_blueprint(payment_bp, url_prefix='/payment')
     app.register_blueprint(account_bp, url_prefix='/account')
     app.register_blueprint(learning_bp, url_prefix='/learn')
+    app.register_blueprint(python_practice_bp, url_prefix='/python-practice')
     
     # Custom Jinja2 filters
     import json

@@ -1,0 +1,5 @@
+# Allowed Python packages for sandbox
+# These are safe, commonly-used packages for learning
+
+numpy==1.24.3
+pandas==2.0.3
