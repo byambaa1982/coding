@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Exercise Submissions - Admin{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Exercise Submissions Monitor</h1>
+        <p class="text-gray-600">Track and moderate exercise submissions</p>
+    </div>
+
+    <!-- Statistics -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow p-6">
+            <p class="text-sm text-gray-600">Total Submissions</p>
+            <p class="text-3xl font-bold text-blue-600 mt-2">{{ total_submissions }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+            <p class="text-sm text-gray-600">Passed</p>
+            <p class="text-3xl font-bold text-green-600 mt-2">{{ passed_count }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+            <p class="text-sm text-gray-600">Failed</p>
+            <p class="text-3xl font-bold text-red-600 mt-2">{{ failed_count }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+            <p class="text-sm text-gray-600">Errors</p>
+            <p class="text-3xl font-bold text-orange-600 mt-2">{{ error_count }}</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <form method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select name="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">All Status</option>
+                    <option value="passed" {% if current_status == 'passed' %}selected{% endif %}>Passed</option>
+                    <option value="failed" {% if current_status == 'failed' %}selected{% endif %}>Failed</option>
+                    <option value="error" {% if current_status == 'error' %}selected{% endif %}>Error</option>
+                    <option value="timeout" {% if current_status == 'timeout' %}selected{% endif %}>Timeout</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Exercise Type</label>
+                <select name="type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">All Types</option>
+                    <option value="python" {% if current_type == 'python' %}selected{% endif %}>Python</option>
+                    <option value="sql" {% if current_type == 'sql' %}selected{% endif %}>SQL</option>
+                </select>
+            </div>
+            <div class="flex items-end">
+                <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    <i class="fas fa-filter mr-2"></i> Apply Filters
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Submissions Table -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exercise</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for submission in submissions.items %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="{{ url_for('admin.user_detail', user_id=submission.user_id) }}" 
+                               class="text-blue-600 hover:text-blue-800 text-sm">
+                                {{ submission.user.email }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-900">{{ submission.exercise.title }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if submission.exercise.exercise_type == 'python' %}
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                <i class="fab fa-python mr-1"></i> Python
+                            </span>
+                            {% else %}
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800">
+                                <i class="fas fa-database mr-1"></i> SQL
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if submission.status == 'passed' %}
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                <i class="fas fa-check-circle mr-1"></i> Passed
+                            </span>
+                            {% elif submission.status == 'failed' %}
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                <i class="fas fa-times-circle mr-1"></i> Failed
+                            </span>
+                            {% elif submission.status == 'error' %}
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
+                                <i class="fas fa-exclamation-triangle mr-1"></i> Error
+                            </span>
+                            {% else %}
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                                <i class="fas fa-clock mr-1"></i> Timeout
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            {% if submission.score is not none %}
+                                <span class="font-semibold {% if submission.score >= 80 %}text-green-600{% elif submission.score >= 60 %}text-yellow-600{% else %}text-red-600{% endif %}">
+                                    {{ "%.1f"|format(submission.score) }}%
+                                </span>
+                            {% else %}
+                                <span class="text-gray-400">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {% if submission.execution_time_ms %}
+                                {{ submission.execution_time_ms }}ms
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if submissions.pages > 1 %}
+        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        Showing <span class="font-medium">{{ submissions.per_page * (submissions.page - 1) + 1 }}</span> to 
+                        <span class="font-medium">{{ [submissions.per_page * submissions.page, submissions.total]|min }}</span> of 
+                        <span class="font-medium">{{ submissions.total }}</span> results
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                        {% if submissions.has_prev %}
+                        <a href="{{ url_for('admin.submissions', page=submissions.prev_num, status=current_status, type=current_type) }}" 
+                           class="relative inline-flex items-center px-4 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            Previous
+                        </a>
+                        {% endif %}
+                        {% if submissions.has_next %}
+                        <a href="{{ url_for('admin.submissions', page=submissions.next_num, status=current_status, type=current_type) }}" 
+                           class="relative inline-flex items-center px-4 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            Next
+                        </a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

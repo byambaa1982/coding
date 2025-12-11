@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Revenue Report - Admin{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Revenue & Orders</h1>
+        <p class="text-gray-600">Financial reports and order management</p>
+    </div>
+
+    <!-- Revenue Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-lg p-6 text-white">
+            <p class="text-green-100 text-sm font-medium">Total Revenue</p>
+            <p class="text-3xl font-bold mt-2">${{ "%.2f"|format(total_revenue) }}</p>
+        </div>
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
+            <p class="text-blue-100 text-sm font-medium">Today</p>
+            <p class="text-3xl font-bold mt-2">${{ "%.2f"|format(revenue_today) }}</p>
+        </div>
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg p-6 text-white">
+            <p class="text-purple-100 text-sm font-medium">This Week</p>
+            <p class="text-3xl font-bold mt-2">${{ "%.2f"|format(revenue_week) }}</p>
+        </div>
+        <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg shadow-lg p-6 text-white">
+            <p class="text-orange-100 text-sm font-medium">This Month</p>
+            <p class="text-3xl font-bold mt-2">${{ "%.2f"|format(revenue_month) }}</p>
+        </div>
+    </div>
+
+    <!-- Filter and Search -->
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <form method="GET" class="flex items-center gap-4">
+            <label class="text-sm font-medium text-gray-700">Filter by Status:</label>
+            <select name="status" onchange="this.form.submit()" 
+                    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                <option value="">All Orders</option>
+                <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Completed</option>
+                <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
+                <option value="failed" {% if current_status == 'failed' %}selected{% endif %}>Failed</option>
+                <option value="refunded" {% if current_status == 'refunded' %}selected{% endif %}>Refunded</option>
+            </select>
+        </form>
+    </div>
+
+    <!-- Orders Table -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for order in orders.items %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap font-mono text-sm">
+                            {{ order.order_number }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="{{ url_for('admin.user_detail', user_id=order.user_id) }}" 
+                               class="text-blue-600 hover:text-blue-800 text-sm">
+                                {{ order.user.email }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if order.status == 'completed' %}
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                <i class="fas fa-check-circle mr-1"></i> Completed
+                            </span>
+                            {% elif order.status == 'pending' %}
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                <i class="fas fa-clock mr-1"></i> Pending
+                            </span>
+                            {% elif order.status == 'failed' %}
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                <i class="fas fa-times-circle mr-1"></i> Failed
+                            </span>
+                            {% elif order.status == 'refunded' %}
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                                <i class="fas fa-undo mr-1"></i> Refunded
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {{ order.items.count() }} item(s)
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                            <span class="text-lg font-bold text-green-600">${{ "%.2f"|format(order.total_amount) }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ order.created_at.strftime('%Y-%m-%d %H:%M') }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <a href="{{ url_for('admin.order_detail', order_id=order.id) }}" 
+                               class="text-blue-600 hover:text-blue-900 mr-3" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if orders.pages > 1 %}
+        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        Showing <span class="font-medium">{{ orders.per_page * (orders.page - 1) + 1 }}</span> to 
+                        <span class="font-medium">{{ [orders.per_page * orders.page, orders.total]|min }}</span> of 
+                        <span class="font-medium">{{ orders.total }}</span> results
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                        {% if orders.has_prev %}
+                        <a href="{{ url_for('admin.revenue', page=orders.prev_num, status=current_status) }}" 
+                           class="relative inline-flex items-center px-4 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            Previous
+                        </a>
+                        {% endif %}
+                        <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                            Page {{ orders.page }} of {{ orders.pages }}
+                        </span>
+                        {% if orders.has_next %}
+                        <a href="{{ url_for('admin.revenue', page=orders.next_num, status=current_status) }}" 
+                           class="relative inline-flex items-center px-4 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            Next
+                        </a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}System Health - Admin{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-8 flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">System Health Monitor</h1>
+            <p class="text-gray-600">Real-time system resource monitoring</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{{ url_for('admin.dashboard') }}" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
+            </a>
+            <button onclick="location.reload()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                <i class="fas fa-sync-alt mr-2"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- System Resources -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">CPU Usage</h3>
+            <div class="flex items-center justify-center mb-4">
+                <div class="relative">
+                    <svg class="transform -rotate-90 w-32 h-32">
+                        <circle cx="64" cy="64" r="52" stroke="#e5e7eb" stroke-width="12" fill="none" />
+                        <circle cx="64" cy="64" r="52" stroke="{% if system_stats.cpu_percent > 80 %}#ef4444{% elif system_stats.cpu_percent > 60 %}#f59e0b{% else %}#10b981{% endif %}" 
+                                stroke-width="12" fill="none"
+                                stroke-dasharray="{{ 326.56 * system_stats.cpu_percent / 100 }} 326.56"
+                                stroke-linecap="round" />
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span class="text-2xl font-bold text-gray-900">{{ "%.1f"|format(system_stats.cpu_percent) }}%</span>
+                    </div>
+                </div>
+            </div>
+            <p class="text-center text-sm text-gray-600">
+                {% if system_stats.cpu_percent > 80 %}
+                    <span class="text-red-600 font-semibold">High Usage</span>
+                {% elif system_stats.cpu_percent > 60 %}
+                    <span class="text-yellow-600 font-semibold">Moderate Usage</span>
+                {% else %}
+                    <span class="text-green-600 font-semibold">Normal</span>
+                {% endif %}
+            </p>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Memory Usage</h3>
+            <div class="flex items-center justify-center mb-4">
+                <div class="relative">
+                    <svg class="transform -rotate-90 w-32 h-32">
+                        <circle cx="64" cy="64" r="52" stroke="#e5e7eb" stroke-width="12" fill="none" />
+                        <circle cx="64" cy="64" r="52" stroke="{% if system_stats.memory_percent > 80 %}#ef4444{% elif system_stats.memory_percent > 60 %}#f59e0b{% else %}#10b981{% endif %}" 
+                                stroke-width="12" fill="none"
+                                stroke-dasharray="{{ 326.56 * system_stats.memory_percent / 100 }} 326.56"
+                                stroke-linecap="round" />
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span class="text-2xl font-bold text-gray-900">{{ "%.1f"|format(system_stats.memory_percent) }}%</span>
+                    </div>
+                </div>
+            </div>
+            <p class="text-center text-sm text-gray-600">
+                {{ "%.2f"|format(system_stats.memory_used_gb) }} GB / {{ "%.2f"|format(system_stats.memory_total_gb) }} GB
+            </p>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Disk Usage</h3>
+            <div class="flex items-center justify-center mb-4">
+                <div class="relative">
+                    <svg class="transform -rotate-90 w-32 h-32">
+                        <circle cx="64" cy="64" r="52" stroke="#e5e7eb" stroke-width="12" fill="none" />
+                        <circle cx="64" cy="64" r="52" stroke="{% if system_stats.disk_percent > 80 %}#ef4444{% elif system_stats.disk_percent > 60 %}#f59e0b{% else %}#10b981{% endif %}" 
+                                stroke-width="12" fill="none"
+                                stroke-dasharray="{{ 326.56 * system_stats.disk_percent / 100 }} 326.56"
+                                stroke-linecap="round" />
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span class="text-2xl font-bold text-gray-900">{{ "%.1f"|format(system_stats.disk_percent) }}%</span>
+                    </div>
+                </div>
+            </div>
+            <p class="text-center text-sm text-gray-600">
+                {{ "%.2f"|format(system_stats.disk_used_gb) }} GB / {{ "%.2f"|format(system_stats.disk_total_gb) }} GB
+            </p>
+        </div>
+    </div>
+
+    <!-- Database Statistics -->
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Database Statistics</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+            <div class="text-center">
+                <p class="text-3xl font-bold text-blue-600">{{ db_stats.users }}</p>
+                <p class="text-sm text-gray-600 mt-1">Users</p>
+            </div>
+            <div class="text-center">
+                <p class="text-3xl font-bold text-purple-600">{{ db_stats.tutorials }}</p>
+                <p class="text-sm text-gray-600 mt-1">Courses</p>
+            </div>
+            <div class="text-center">
+                <p class="text-3xl font-bold text-indigo-600">{{ db_stats.lessons }}</p>
+                <p class="text-sm text-gray-600 mt-1">Lessons</p>
+            </div>
+            <div class="text-center">
+                <p class="text-3xl font-bold text-pink-600">{{ db_stats.exercises }}</p>
+                <p class="text-sm text-gray-600 mt-1">Exercises</p>
+            </div>
+            <div class="text-center">
+                <p class="text-3xl font-bold text-teal-600">{{ db_stats.enrollments }}</p>
+                <p class="text-sm text-gray-600 mt-1">Enrollments</p>
+            </div>
+            <div class="text-center">
+                <p class="text-3xl font-bold text-green-600">{{ db_stats.orders }}</p>
+                <p class="text-sm text-gray-600 mt-1">Orders</p>
+            </div>
+            <div class="text-center">
+                <p class="text-3xl font-bold text-orange-600">{{ db_stats.submissions }}</p>
+                <p class="text-sm text-gray-600 mt-1">Submissions</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Health Indicators -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                <i class="fas fa-exclamation-triangle mr-2 {% if recent_failures.failed_orders > 0 %}text-red-600{% else %}text-gray-400{% endif %}"></i>
+                Failed Orders
+            </h3>
+            <p class="text-4xl font-bold {% if recent_failures.failed_orders > 0 %}text-red-600{% else %}text-gray-400{% endif %}">
+                {{ recent_failures.failed_orders }}
+            </p>
+            <p class="text-sm text-gray-600 mt-2">
+                {% if recent_failures.failed_orders > 0 %}
+                    Requires attention
+                {% else %}
+                    All good!
+                {% endif %}
+            </p>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                <i class="fas fa-clock mr-2 {% if recent_failures.pending_orders > 10 %}text-yellow-600{% else %}text-gray-400{% endif %}"></i>
+                Pending Orders
+            </h3>
+            <p class="text-4xl font-bold {% if recent_failures.pending_orders > 10 %}text-yellow-600{% else %}text-gray-600{% endif %}">
+                {{ recent_failures.pending_orders }}
+            </p>
+            <p class="text-sm text-gray-600 mt-2">
+                {% if recent_failures.pending_orders > 10 %}
+                    High volume
+                {% else %}
+                    Normal
+                {% endif %}
+            </p>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                <i class="fas fa-bug mr-2 {% if recent_failures.error_submissions > 0 %}text-red-600{% else %}text-gray-400{% endif %}"></i>
+                Error Submissions
+            </h3>
+            <p class="text-4xl font-bold {% if recent_failures.error_submissions > 0 %}text-red-600{% else %}text-gray-400{% endif %}">
+                {{ recent_failures.error_submissions }}
+            </p>
+            <p class="text-sm text-gray-600 mt-2">
+                {% if recent_failures.error_submissions > 0 %}
+                    Check sandbox
+                {% else %}
+                    All good!
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <!-- Recommended Actions -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Recommended Actions</h2>
+        <div class="space-y-3">
+            {% if system_stats.cpu_percent > 80 %}
+            <div class="flex items-start p-4 bg-red-50 rounded-lg">
+                <i class="fas fa-exclamation-circle text-red-600 mt-1 mr-3"></i>
+                <div>
+                    <p class="font-semibold text-red-800">High CPU Usage Detected</p>
+                    <p class="text-sm text-red-700 mt-1">Consider scaling up server resources or optimizing code execution.</p>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if system_stats.memory_percent > 80 %}
+            <div class="flex items-start p-4 bg-red-50 rounded-lg">
+                <i class="fas fa-exclamation-circle text-red-600 mt-1 mr-3"></i>
+                <div>
+                    <p class="font-semibold text-red-800">High Memory Usage Detected</p>
+                    <p class="text-sm text-red-700 mt-1">Review memory-intensive processes and consider adding more RAM.</p>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if system_stats.disk_percent > 80 %}
+            <div class="flex items-start p-4 bg-yellow-50 rounded-lg">
+                <i class="fas fa-exclamation-triangle text-yellow-600 mt-1 mr-3"></i>
+                <div>
+                    <p class="font-semibold text-yellow-800">Disk Space Running Low</p>
+                    <p class="text-sm text-yellow-700 mt-1">Clean up old logs, temporary files, or expand storage capacity.</p>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if recent_failures.failed_orders > 0 %}
+            <div class="flex items-start p-4 bg-red-50 rounded-lg">
+                <i class="fas fa-exclamation-circle text-red-600 mt-1 mr-3"></i>
+                <div>
+                    <p class="font-semibold text-red-800">Failed Orders Detected</p>
+                    <p class="text-sm text-red-700 mt-1">
+                        <a href="{{ url_for('admin.revenue', status='failed') }}" class="underline">Review failed orders</a> and investigate payment issues.
+                    </p>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if system_stats.cpu_percent < 60 and system_stats.memory_percent < 60 and system_stats.disk_percent < 60 and recent_failures.failed_orders == 0 %}
+            <div class="flex items-start p-4 bg-green-50 rounded-lg">
+                <i class="fas fa-check-circle text-green-600 mt-1 mr-3"></i>
+                <div>
+                    <p class="font-semibold text-green-800">All Systems Operational</p>
+                    <p class="text-sm text-green-700 mt-1">No issues detected. System is running smoothly.</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

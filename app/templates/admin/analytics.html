@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics Dashboard - Admin{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-8 flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Analytics Dashboard</h1>
+            <p class="text-gray-600">Detailed platform insights and trends</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{{ url_for('admin.dashboard') }}" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Time Period Filter -->
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <form method="GET" class="flex items-center gap-4">
+            <label class="text-sm font-medium text-gray-700">Time Period:</label>
+            <select name="days" onchange="this.form.submit()" 
+                    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                <option value="7" {% if days == 7 %}selected{% endif %}>Last 7 Days</option>
+                <option value="14" {% if days == 14 %}selected{% endif %}>Last 14 Days</option>
+                <option value="30" {% if days == 30 %}selected{% endif %}>Last 30 Days</option>
+                <option value="60" {% if days == 60 %}selected{% endif %}>Last 60 Days</option>
+                <option value="90" {% if days == 90 %}selected{% endif %}>Last 90 Days</option>
+            </select>
+        </form>
+    </div>
+
+    <!-- Revenue Chart -->
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Revenue Trend</h2>
+        <div class="overflow-x-auto">
+            {% if daily_revenue %}
+            <div style="min-height: 300px;">
+                <canvas id="revenueChart"></canvas>
+            </div>
+            <script>
+                const revenueData = {
+                    labels: [{% for item in daily_revenue %}'{{ item.date.strftime('%Y-%m-%d') }}',{% endfor %}],
+                    datasets: [{
+                        label: 'Revenue ($)',
+                        data: [{% for item in daily_revenue %}{{ item.revenue }},{% endfor %}],
+                        backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                        borderColor: 'rgba(34, 197, 94, 1)',
+                        borderWidth: 2,
+                        tension: 0.3
+                    }]
+                };
+                // Chart.js initialization would go here
+            </script>
+            {% else %}
+            <p class="text-gray-500 text-center py-8">No revenue data available for this period</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Course Type Comparison -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Revenue by Course Type</h2>
+            {% if course_type_revenue %}
+            <div class="space-y-4">
+                {% for item in course_type_revenue %}
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-semibold text-gray-700">
+                            {% if item.course_type == 'python' %}
+                                <i class="fab fa-python text-yellow-600 mr-2"></i> Python
+                            {% else %}
+                                <i class="fas fa-database text-indigo-600 mr-2"></i> SQL
+                            {% endif %}
+                        </span>
+                        <span class="text-lg font-bold text-green-600">${{ "%.2f"|format(item.revenue or 0) }}</span>
+                    </div>
+                    <p class="text-sm text-gray-600">{{ item.enrollments or 0 }} enrollments</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-gray-500 text-center py-8">No data available</p>
+            {% endif %}
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">User Growth</h2>
+            {% if daily_signups %}
+            <div>
+                <p class="text-3xl font-bold text-blue-600 mb-2">{{ daily_signups|length }} days tracked</p>
+                <p class="text-sm text-gray-600">
+                    Total signups: {{ daily_signups|sum(attribute='signups') }}
+                </p>
+            </div>
+            {% else %}
+            <p class="text-gray-500 text-center py-8">No signup data available</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Enrollment Trends -->
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Enrollment Trends</h2>
+        {% if daily_enrollments %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead>
+                    <tr class="border-b border-gray-200">
+                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Date</th>
+                        <th class="text-right py-3 px-4 text-sm font-semibold text-gray-600">Enrollments</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in daily_enrollments[-7:] %}
+                    <tr class="border-b border-gray-100">
+                        <td class="py-3 px-4 text-sm text-gray-900">{{ item.date.strftime('%Y-%m-%d') }}</td>
+                        <td class="py-3 px-4 text-right text-sm font-semibold text-blue-600">{{ item.enrollments }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-center py-8">No enrollment data available</p>
+        {% endif %}
+    </div>
+
+    <!-- Submission Activity -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Exercise Submission Activity</h2>
+        {% if daily_submissions %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead>
+                    <tr class="border-b border-gray-200">
+                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Date</th>
+                        <th class="text-right py-3 px-4 text-sm font-semibold text-gray-600">Total</th>
+                        <th class="text-right py-3 px-4 text-sm font-semibold text-gray-600">Passed</th>
+                        <th class="text-right py-3 px-4 text-sm font-semibold text-gray-600">Success Rate</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in daily_submissions[-7:] %}
+                    <tr class="border-b border-gray-100">
+                        <td class="py-3 px-4 text-sm text-gray-900">{{ item.date.strftime('%Y-%m-%d') }}</td>
+                        <td class="py-3 px-4 text-right text-sm text-gray-900">{{ item.submissions }}</td>
+                        <td class="py-3 px-4 text-right text-sm font-semibold text-green-600">{{ item.passed }}</td>
+                        <td class="py-3 px-4 text-right text-sm font-semibold text-blue-600">
+                            {% if item.submissions > 0 %}
+                                {{ "%.1f"|format((item.passed / item.submissions) * 100) }}%
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-center py-8">No submission data available</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Load Chart.js for charts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}

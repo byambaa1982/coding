@@ -6,38 +6,149 @@ from flask_login import login_required, current_user
 from app.admin import admin_bp
 from app.admin.decorators import admin_required
 from app.admin.forms import TutorialForm, LessonForm, ExerciseForm
-from app.models import NewTutorial, Lesson, Exercise, TutorialUser
+from app.models import NewTutorial, Lesson, Exercise, TutorialUser, TutorialOrderItem
 from app.extensions import db
 from datetime import datetime
-from sqlalchemy import func
+from sqlalchemy import func, case
 
 
 @admin_bp.route('/dashboard')
 @login_required
 @admin_required
 def dashboard():
-    """Admin dashboard with statistics."""
-    # Get statistics
+    """Admin dashboard with comprehensive KPIs and statistics."""
+    from app.models import TutorialEnrollment, TutorialOrder, ExerciseSubmission
+    from sqlalchemy import func, and_
+    from datetime import datetime, timedelta
+    
+    # Course statistics
     total_tutorials = NewTutorial.query.count()
     python_tutorials = NewTutorial.query.filter_by(course_type='python').count()
     sql_tutorials = NewTutorial.query.filter_by(course_type='sql').count()
     published_tutorials = NewTutorial.query.filter_by(status='published').count()
-    total_users = TutorialUser.query.count()
+    draft_tutorials = NewTutorial.query.filter_by(status='draft').count()
     total_lessons = Lesson.query.count()
     total_exercises = Exercise.query.count()
     
-    # Recent tutorials
+    # User statistics
+    total_users = TutorialUser.query.count()
+    active_users = TutorialUser.query.filter_by(is_active=True).count()
+    new_users_today = TutorialUser.query.filter(
+        TutorialUser.created_at >= datetime.utcnow().date()
+    ).count()
+    new_users_week = TutorialUser.query.filter(
+        TutorialUser.created_at >= datetime.utcnow() - timedelta(days=7)
+    ).count()
+    
+    # Enrollment statistics
+    total_enrollments = TutorialEnrollment.query.count()
+    active_enrollments = TutorialEnrollment.query.filter_by(status='active').count()
+    completed_enrollments = TutorialEnrollment.query.filter_by(is_completed=True).count()
+    enrollments_today = TutorialEnrollment.query.filter(
+        TutorialEnrollment.enrolled_at >= datetime.utcnow().date()
+    ).count()
+    enrollments_week = TutorialEnrollment.query.filter(
+        TutorialEnrollment.enrolled_at >= datetime.utcnow() - timedelta(days=7)
+    ).count()
+    
+    # Revenue statistics
+    total_orders = TutorialOrder.query.count()
+    completed_orders = TutorialOrder.query.filter_by(status='completed').count()
+    total_revenue = db.session.query(func.sum(TutorialOrder.total_amount)).filter_by(
+        status='completed'
+    ).scalar() or 0
+    revenue_today = db.session.query(func.sum(TutorialOrder.total_amount)).filter(
+        and_(TutorialOrder.status == 'completed',
+             TutorialOrder.paid_at >= datetime.utcnow().date())
+    ).scalar() or 0
+    revenue_week = db.session.query(func.sum(TutorialOrder.total_amount)).filter(
+        and_(TutorialOrder.status == 'completed',
+             TutorialOrder.paid_at >= datetime.utcnow() - timedelta(days=7))
+    ).scalar() or 0
+    revenue_month = db.session.query(func.sum(TutorialOrder.total_amount)).filter(
+        and_(TutorialOrder.status == 'completed',
+             TutorialOrder.paid_at >= datetime.utcnow() - timedelta(days=30))
+    ).scalar() or 0
+    
+    # Exercise submission statistics
+    total_submissions = ExerciseSubmission.query.count()
+    passed_submissions = ExerciseSubmission.query.filter_by(status='passed').count()
+    submissions_today = ExerciseSubmission.query.filter(
+        ExerciseSubmission.submitted_at >= datetime.utcnow().date()
+    ).count()
+    
+    # Top courses by enrollment
+    top_courses_by_enrollment = db.session.query(
+        NewTutorial.id,
+        NewTutorial.title,
+        NewTutorial.course_type,
+        func.count(TutorialEnrollment.id).label('enrollment_count')
+    ).join(TutorialEnrollment).group_by(
+        NewTutorial.id, NewTutorial.title, NewTutorial.course_type
+    ).order_by(func.count(TutorialEnrollment.id).desc()).limit(5).all()
+    
+    # Top courses by revenue
+    top_courses_by_revenue = db.session.query(
+        NewTutorial.id,
+        NewTutorial.title,
+        NewTutorial.course_type,
+        func.sum(TutorialOrder.total_amount).label('revenue')
+    ).join(TutorialOrderItem, TutorialOrderItem.tutorial_id == NewTutorial.id
+    ).join(TutorialOrder, TutorialOrder.id == TutorialOrderItem.order_id
+    ).filter(TutorialOrder.status == 'completed'
+    ).group_by(NewTutorial.id, NewTutorial.title, NewTutorial.course_type
+    ).order_by(func.sum(TutorialOrder.total_amount).desc()).limit(5).all()
+    
+    # Recent activities
     recent_tutorials = NewTutorial.query.order_by(NewTutorial.created_at.desc()).limit(5).all()
+    recent_enrollments = TutorialEnrollment.query.order_by(TutorialEnrollment.enrolled_at.desc()).limit(5).all()
+    recent_orders = TutorialOrder.query.filter_by(status='completed').order_by(TutorialOrder.paid_at.desc()).limit(5).all()
+    
+    # System health indicators
+    pending_orders = TutorialOrder.query.filter_by(status='pending').count()
+    failed_orders = TutorialOrder.query.filter_by(status='failed').count()
     
     return render_template('admin/dashboard.html',
+                         # Course stats
                          total_tutorials=total_tutorials,
                          python_tutorials=python_tutorials,
                          sql_tutorials=sql_tutorials,
                          published_tutorials=published_tutorials,
-                         total_users=total_users,
+                         draft_tutorials=draft_tutorials,
                          total_lessons=total_lessons,
                          total_exercises=total_exercises,
-                         recent_tutorials=recent_tutorials)
+                         # User stats
+                         total_users=total_users,
+                         active_users=active_users,
+                         new_users_today=new_users_today,
+                         new_users_week=new_users_week,
+                         # Enrollment stats
+                         total_enrollments=total_enrollments,
+                         active_enrollments=active_enrollments,
+                         completed_enrollments=completed_enrollments,
+                         enrollments_today=enrollments_today,
+                         enrollments_week=enrollments_week,
+                         # Revenue stats
+                         total_orders=total_orders,
+                         completed_orders=completed_orders,
+                         total_revenue=total_revenue,
+                         revenue_today=revenue_today,
+                         revenue_week=revenue_week,
+                         revenue_month=revenue_month,
+                         # Exercise stats
+                         total_submissions=total_submissions,
+                         passed_submissions=passed_submissions,
+                         submissions_today=submissions_today,
+                         # Top courses
+                         top_courses_by_enrollment=top_courses_by_enrollment,
+                         top_courses_by_revenue=top_courses_by_revenue,
+                         # Recent activities
+                         recent_tutorials=recent_tutorials,
+                         recent_enrollments=recent_enrollments,
+                         recent_orders=recent_orders,
+                         # System health
+                         pending_orders=pending_orders,
+                         failed_orders=failed_orders)
 
 
 @admin_bp.route('/courses')
@@ -361,3 +472,463 @@ def exercise_delete(exercise_id):
     
     flash(f'Exercise "{title}" deleted successfully!', 'success')
     return redirect(url_for('admin.course_edit', course_id=course_id))
+
+
+# ============================================================================
+# USER MANAGEMENT ROUTES
+# ============================================================================
+
+@admin_bp.route('/users')
+@login_required
+@admin_required
+def users_list():
+    """List all users with search and filter."""
+    from app.models import TutorialEnrollment, TutorialOrder
+    
+    page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '')
+    status = request.args.get('status', '')
+    role = request.args.get('role', '')
+    
+    query = TutorialUser.query
+    
+    # Search filter
+    if search:
+        search_pattern = f'%{search}%'
+        query = query.filter(
+            db.or_(
+                TutorialUser.email.ilike(search_pattern),
+                TutorialUser.username.ilike(search_pattern),
+                TutorialUser.full_name.ilike(search_pattern)
+            )
+        )
+    
+    # Status filter
+    if status == 'active':
+        query = query.filter_by(is_active=True)
+    elif status == 'inactive':
+        query = query.filter_by(is_active=False)
+    elif status == 'verified':
+        query = query.filter_by(email_verified=True)
+    elif status == 'unverified':
+        query = query.filter_by(email_verified=False)
+    
+    # Role filter
+    if role == 'admin':
+        query = query.filter_by(is_admin=True)
+    elif role == 'instructor':
+        query = query.filter_by(is_instructor=True)
+    elif role == 'student':
+        query = query.filter_by(is_admin=False, is_instructor=False)
+    
+    users = query.order_by(TutorialUser.created_at.desc()).paginate(
+        page=page, per_page=20, error_out=False
+    )
+    
+    # Get user statistics
+    for user in users.items:
+        user.enrollment_count = TutorialEnrollment.query.filter_by(user_id=user.id).count()
+        user.order_count = TutorialOrder.query.filter_by(user_id=user.id, status='completed').count()
+        user.total_spent = db.session.query(func.sum(TutorialOrder.total_amount)).filter_by(
+            user_id=user.id, status='completed'
+        ).scalar() or 0
+    
+    return render_template('admin/users/list.html',
+                         users=users,
+                         search=search,
+                         current_status=status,
+                         current_role=role)
+
+
+@admin_bp.route('/users/<int:user_id>')
+@login_required
+@admin_required
+def user_detail(user_id):
+    """View detailed user information."""
+    from app.models import TutorialEnrollment, TutorialOrder, ExerciseSubmission
+    
+    user = TutorialUser.query.get_or_404(user_id)
+    
+    # User enrollments with progress
+    enrollments = TutorialEnrollment.query.filter_by(user_id=user_id).order_by(
+        TutorialEnrollment.enrolled_at.desc()
+    ).all()
+    
+    # User orders
+    orders = TutorialOrder.query.filter_by(user_id=user_id).order_by(
+        TutorialOrder.created_at.desc()
+    ).all()
+    
+    # User submissions
+    recent_submissions = ExerciseSubmission.query.filter_by(user_id=user_id).order_by(
+        ExerciseSubmission.submitted_at.desc()
+    ).limit(10).all()
+    
+    # Statistics
+    total_spent = db.session.query(func.sum(TutorialOrder.total_amount)).filter_by(
+        user_id=user_id, status='completed'
+    ).scalar() or 0
+    total_submissions = ExerciseSubmission.query.filter_by(user_id=user_id).count()
+    passed_submissions = ExerciseSubmission.query.filter_by(user_id=user_id, status='passed').count()
+    
+    return render_template('admin/users/detail.html',
+                         user=user,
+                         enrollments=enrollments,
+                         orders=orders,
+                         recent_submissions=recent_submissions,
+                         total_spent=total_spent,
+                         total_submissions=total_submissions,
+                         passed_submissions=passed_submissions)
+
+
+@admin_bp.route('/users/<int:user_id>/toggle-active', methods=['POST'])
+@login_required
+@admin_required
+def user_toggle_active(user_id):
+    """Ban/unban a user."""
+    user = TutorialUser.query.get_or_404(user_id)
+    
+    if user.id == current_user.id:
+        flash('You cannot deactivate your own account!', 'error')
+        return redirect(url_for('admin.user_detail', user_id=user_id))
+    
+    user.is_active = not user.is_active
+    db.session.commit()
+    
+    status = 'activated' if user.is_active else 'deactivated'
+    flash(f'User {user.email} has been {status}!', 'success')
+    return redirect(url_for('admin.user_detail', user_id=user_id))
+
+
+@admin_bp.route('/users/<int:user_id>/toggle-admin', methods=['POST'])
+@login_required
+@admin_required
+def user_toggle_admin(user_id):
+    """Grant/revoke admin privileges."""
+    user = TutorialUser.query.get_or_404(user_id)
+    
+    user.is_admin = not user.is_admin
+    db.session.commit()
+    
+    status = 'granted' if user.is_admin else 'revoked'
+    flash(f'Admin privileges {status} for {user.email}!', 'success')
+    return redirect(url_for('admin.user_detail', user_id=user_id))
+
+
+@admin_bp.route('/users/<int:user_id>/enroll', methods=['POST'])
+@login_required
+@admin_required
+def user_manual_enroll(user_id):
+    """Manually enroll a user in a course."""
+    from app.models import TutorialEnrollment
+    
+    user = TutorialUser.query.get_or_404(user_id)
+    tutorial_id = request.form.get('tutorial_id', type=int)
+    
+    if not tutorial_id:
+        flash('Please select a course!', 'error')
+        return redirect(url_for('admin.user_detail', user_id=user_id))
+    
+    tutorial = NewTutorial.query.get_or_404(tutorial_id)
+    
+    # Check if already enrolled
+    existing = TutorialEnrollment.query.filter_by(
+        user_id=user_id, tutorial_id=tutorial_id
+    ).first()
+    
+    if existing:
+        flash(f'User is already enrolled in "{tutorial.title}"!', 'warning')
+        return redirect(url_for('admin.user_detail', user_id=user_id))
+    
+    # Create enrollment
+    enrollment = TutorialEnrollment(
+        user_id=user_id,
+        tutorial_id=tutorial_id,
+        status='active',
+        enrollment_type='gifted'
+    )
+    
+    db.session.add(enrollment)
+    db.session.commit()
+    
+    flash(f'User enrolled in "{tutorial.title}" successfully!', 'success')
+    return redirect(url_for('admin.user_detail', user_id=user_id))
+
+
+@admin_bp.route('/users/<int:user_id>/unenroll/<int:enrollment_id>', methods=['POST'])
+@login_required
+@admin_required
+def user_manual_unenroll(user_id, enrollment_id):
+    """Manually unenroll a user from a course."""
+    from app.models import TutorialEnrollment
+    
+    enrollment = TutorialEnrollment.query.get_or_404(enrollment_id)
+    
+    if enrollment.user_id != user_id:
+        flash('Invalid enrollment!', 'error')
+        return redirect(url_for('admin.user_detail', user_id=user_id))
+    
+    tutorial_title = enrollment.tutorial.title
+    db.session.delete(enrollment)
+    db.session.commit()
+    
+    flash(f'User unenrolled from "{tutorial_title}"!', 'success')
+    return redirect(url_for('admin.user_detail', user_id=user_id))
+
+
+# ============================================================================
+# REVENUE & ANALYTICS ROUTES
+# ============================================================================
+
+@admin_bp.route('/analytics')
+@login_required
+@admin_required
+def analytics():
+    """Analytics dashboard with detailed reports."""
+    from app.models import TutorialEnrollment, TutorialOrder, ExerciseSubmission
+    from datetime import datetime, timedelta
+    
+    # Date range filter
+    days = request.args.get('days', 30, type=int)
+    start_date = datetime.utcnow() - timedelta(days=days)
+    
+    # Revenue analytics
+    daily_revenue = db.session.query(
+        func.date(TutorialOrder.paid_at).label('date'),
+        func.sum(TutorialOrder.total_amount).label('revenue'),
+        func.count(TutorialOrder.id).label('orders')
+    ).filter(
+        TutorialOrder.status == 'completed',
+        TutorialOrder.paid_at >= start_date
+    ).group_by(func.date(TutorialOrder.paid_at)).order_by('date').all()
+    
+    # Course type revenue comparison
+    course_type_revenue = db.session.query(
+        NewTutorial.course_type,
+        func.sum(TutorialOrder.total_amount).label('revenue'),
+        func.count(TutorialEnrollment.id).label('enrollments')
+    ).join(TutorialOrderItem, TutorialOrderItem.tutorial_id == NewTutorial.id
+    ).join(TutorialOrder, TutorialOrder.id == TutorialOrderItem.order_id
+    ).outerjoin(TutorialEnrollment, TutorialEnrollment.tutorial_id == NewTutorial.id
+    ).filter(TutorialOrder.status == 'completed'
+    ).group_by(NewTutorial.course_type).all()
+    
+    # User growth
+    daily_signups = db.session.query(
+        func.date(TutorialUser.created_at).label('date'),
+        func.count(TutorialUser.id).label('signups')
+    ).filter(
+        TutorialUser.created_at >= start_date
+    ).group_by(func.date(TutorialUser.created_at)).order_by('date').all()
+    
+    # Enrollment trends
+    daily_enrollments = db.session.query(
+        func.date(TutorialEnrollment.enrolled_at).label('date'),
+        func.count(TutorialEnrollment.id).label('enrollments')
+    ).filter(
+        TutorialEnrollment.enrolled_at >= start_date
+    ).group_by(func.date(TutorialEnrollment.enrolled_at)).order_by('date').all()
+    
+    # Submission activity
+    daily_submissions = db.session.query(
+        func.date(ExerciseSubmission.submitted_at).label('date'),
+        func.count(ExerciseSubmission.id).label('submissions'),
+        func.sum(case((ExerciseSubmission.status == 'passed', 1), else_=0)).label('passed')
+    ).filter(
+        ExerciseSubmission.submitted_at >= start_date
+    ).group_by(func.date(ExerciseSubmission.submitted_at)).order_by('date').all()
+    
+    return render_template('admin/analytics.html',
+                         days=days,
+                         daily_revenue=daily_revenue,
+                         course_type_revenue=course_type_revenue,
+                         daily_signups=daily_signups,
+                         daily_enrollments=daily_enrollments,
+                         daily_submissions=daily_submissions)
+
+
+@admin_bp.route('/revenue')
+@login_required
+@admin_required
+def revenue():
+    """Revenue reports and order management."""
+    from app.models import TutorialOrder
+    from datetime import datetime, timedelta
+    
+    page = request.args.get('page', 1, type=int)
+    status_filter = request.args.get('status', '')
+    
+    query = TutorialOrder.query
+    
+    if status_filter:
+        query = query.filter_by(status=status_filter)
+    
+    orders = query.order_by(TutorialOrder.created_at.desc()).paginate(
+        page=page, per_page=20, error_out=False
+    )
+    
+    # Revenue statistics
+    total_revenue = db.session.query(func.sum(TutorialOrder.total_amount)).filter_by(
+        status='completed'
+    ).scalar() or 0
+    
+    revenue_today = db.session.query(func.sum(TutorialOrder.total_amount)).filter(
+        TutorialOrder.status == 'completed',
+        TutorialOrder.paid_at >= datetime.utcnow().date()
+    ).scalar() or 0
+    
+    revenue_week = db.session.query(func.sum(TutorialOrder.total_amount)).filter(
+        TutorialOrder.status == 'completed',
+        TutorialOrder.paid_at >= datetime.utcnow() - timedelta(days=7)
+    ).scalar() or 0
+    
+    revenue_month = db.session.query(func.sum(TutorialOrder.total_amount)).filter(
+        TutorialOrder.status == 'completed',
+        TutorialOrder.paid_at >= datetime.utcnow() - timedelta(days=30)
+    ).scalar() or 0
+    
+    return render_template('admin/revenue.html',
+                         orders=orders,
+                         current_status=status_filter,
+                         total_revenue=total_revenue,
+                         revenue_today=revenue_today,
+                         revenue_week=revenue_week,
+                         revenue_month=revenue_month)
+
+
+@admin_bp.route('/orders/<int:order_id>')
+@login_required
+@admin_required
+def order_detail(order_id):
+    """View detailed order information."""
+    from app.models import TutorialOrder
+    
+    order = TutorialOrder.query.get_or_404(order_id)
+    
+    return render_template('admin/orders/detail.html', order=order)
+
+
+@admin_bp.route('/orders/<int:order_id>/refund', methods=['POST'])
+@login_required
+@admin_required
+def order_refund(order_id):
+    """Process order refund."""
+    from app.models import TutorialOrder, TutorialEnrollment
+    
+    order = TutorialOrder.query.get_or_404(order_id)
+    
+    if order.status != 'completed':
+        flash('Only completed orders can be refunded!', 'error')
+        return redirect(url_for('admin.order_detail', order_id=order_id))
+    
+    if order.refunded_at:
+        flash('Order has already been refunded!', 'warning')
+        return redirect(url_for('admin.order_detail', order_id=order_id))
+    
+    # Update order status
+    order.status = 'refunded'
+    order.refunded_at = datetime.utcnow()
+    
+    # Cancel associated enrollments
+    TutorialEnrollment.query.filter_by(order_id=order_id).update({'status': 'cancelled'})
+    
+    db.session.commit()
+    
+    flash(f'Order {order.order_number} refunded successfully!', 'success')
+    # TODO: Process Stripe refund via payment/stripe_utils.py
+    
+    return redirect(url_for('admin.order_detail', order_id=order_id))
+
+
+# ============================================================================
+# SYSTEM MONITORING ROUTES
+# ============================================================================
+
+@admin_bp.route('/system')
+@login_required
+@admin_required
+def system_health():
+    """System health monitoring dashboard."""
+    from app.models import TutorialOrder, ExerciseSubmission
+    import psutil
+    import os
+    
+    # Database statistics
+    db_stats = {
+        'users': TutorialUser.query.count(),
+        'tutorials': NewTutorial.query.count(),
+        'lessons': Lesson.query.count(),
+        'exercises': Exercise.query.count(),
+        'enrollments': db.session.query(func.count()).select_from(
+            db.session.query(TutorialEnrollment).subquery()
+        ).scalar(),
+        'orders': TutorialOrder.query.count(),
+        'submissions': ExerciseSubmission.query.count()
+    }
+    
+    # System resources
+    cpu_percent = psutil.cpu_percent(interval=1)
+    memory = psutil.virtual_memory()
+    disk = psutil.disk_usage('/')
+    
+    system_stats = {
+        'cpu_percent': cpu_percent,
+        'memory_percent': memory.percent,
+        'memory_used_gb': memory.used / (1024**3),
+        'memory_total_gb': memory.total / (1024**3),
+        'disk_percent': disk.percent,
+        'disk_used_gb': disk.used / (1024**3),
+        'disk_total_gb': disk.total / (1024**3)
+    }
+    
+    # Recent errors (would integrate with error logging system)
+    # For now, showing failed orders as proxy
+    recent_failures = {
+        'failed_orders': TutorialOrder.query.filter_by(status='failed').count(),
+        'pending_orders': TutorialOrder.query.filter_by(status='pending').count(),
+        'error_submissions': ExerciseSubmission.query.filter_by(status='error').count()
+    }
+    
+    return render_template('admin/system.html',
+                         db_stats=db_stats,
+                         system_stats=system_stats,
+                         recent_failures=recent_failures)
+
+
+@admin_bp.route('/submissions')
+@login_required
+@admin_required
+def submissions():
+    """Monitor exercise submissions for moderation."""
+    from app.models import ExerciseSubmission
+    
+    page = request.args.get('page', 1, type=int)
+    status_filter = request.args.get('status', '')
+    exercise_type = request.args.get('type', '')
+    
+    query = ExerciseSubmission.query
+    
+    if status_filter:
+        query = query.filter_by(status=status_filter)
+    
+    if exercise_type:
+        query = query.join(Exercise).filter(Exercise.exercise_type == exercise_type)
+    
+    submissions = query.order_by(ExerciseSubmission.submitted_at.desc()).paginate(
+        page=page, per_page=50, error_out=False
+    )
+    
+    # Statistics
+    total_submissions = ExerciseSubmission.query.count()
+    passed_count = ExerciseSubmission.query.filter_by(status='passed').count()
+    failed_count = ExerciseSubmission.query.filter_by(status='failed').count()
+    error_count = ExerciseSubmission.query.filter_by(status='error').count()
+    
+    return render_template('admin/submissions.html',
+                         submissions=submissions,
+                         current_status=status_filter,
+                         current_type=exercise_type,
+                         total_submissions=total_submissions,
+                         passed_count=passed_count,
+                         failed_count=failed_count,
+                         error_count=error_count)
