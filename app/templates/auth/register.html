@@ -1,68 +1,79 @@
 {% extends "base.html" %}
 
-{% block title %}Register - Tutorial E-Commerce Platform{% endblock %}
+{% block title %}Sign Up - CodeLearn{% endblock %}
 
 {% block content %}
-<div class="max-w-md mx-auto">
-    <div class="bg-white rounded-lg shadow-md p-8">
-        <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">Create Account</h2>
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <i class="fas fa-user-plus"></i>
+            <h2>Create Your Account</h2>
+            <p>Start your coding journey today</p>
+        </div>
         
         <form method="POST" novalidate>
             {{ form.hidden_tag() }}
             
             <!-- Email -->
-            <div class="mb-4">
-                {{ form.email.label(class="block text-gray-700 font-medium mb-2") }}
-                {{ form.email(class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500") }}
+            <div class="form-group">
+                {{ form.email.label(class="form-label") }}
+                {{ form.email(class="form-input", placeholder="your.email@example.com") }}
                 {% if form.email.errors %}
-                    <p class="text-red-500 text-sm mt-1">{{ form.email.errors[0] }}</p>
+                    <p class="form-error">{{ form.email.errors[0] }}</p>
                 {% endif %}
             </div>
             
             <!-- Username -->
-            <div class="mb-4">
-                {{ form.username.label(class="block text-gray-700 font-medium mb-2") }}
-                {{ form.username(class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500") }}
+            <div class="form-group">
+                {{ form.username.label(class="form-label") }}
+                {{ form.username(class="form-input", placeholder="Choose a username") }}
                 {% if form.username.errors %}
-                    <p class="text-red-500 text-sm mt-1">{{ form.username.errors[0] }}</p>
+                    <p class="form-error">{{ form.username.errors[0] }}</p>
                 {% endif %}
             </div>
             
             <!-- Full Name -->
-            <div class="mb-4">
-                {{ form.full_name.label(class="block text-gray-700 font-medium mb-2") }}
-                {{ form.full_name(class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500") }}
+            <div class="form-group">
+                {{ form.full_name.label(class="form-label") }}
+                {{ form.full_name(class="form-input", placeholder="Your full name") }}
                 {% if form.full_name.errors %}
-                    <p class="text-red-500 text-sm mt-1">{{ form.full_name.errors[0] }}</p>
+                    <p class="form-error">{{ form.full_name.errors[0] }}</p>
                 {% endif %}
             </div>
             
             <!-- Password -->
-            <div class="mb-4">
-                {{ form.password.label(class="block text-gray-700 font-medium mb-2") }}
-                {{ form.password(class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500") }}
+            <div class="form-group">
+                {{ form.password.label(class="form-label") }}
+                {{ form.password(class="form-input", placeholder="Create a strong password") }}
                 {% if form.password.errors %}
-                    <p class="text-red-500 text-sm mt-1">{{ form.password.errors[0] }}</p>
+                    <p class="form-error">{{ form.password.errors[0] }}</p>
                 {% endif %}
             </div>
             
             <!-- Confirm Password -->
-            <div class="mb-6">
-                {{ form.confirm_password.label(class="block text-gray-700 font-medium mb-2") }}
-                {{ form.confirm_password(class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500") }}
+            <div class="form-group">
+                {{ form.confirm_password.label(class="form-label") }}
+                {{ form.confirm_password(class="form-input", placeholder="Confirm your password") }}
                 {% if form.confirm_password.errors %}
-                    <p class="text-red-500 text-sm mt-1">{{ form.confirm_password.errors[0] }}</p>
+                    <p class="form-error">{{ form.confirm_password.errors[0] }}</p>
                 {% endif %}
             </div>
             
             <!-- Submit -->
-            {{ form.submit(class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium") }}
+            {{ form.submit(class="btn btn-primary btn-lg btn-full") }}
         </form>
         
-        <p class="text-center text-gray-600 mt-4">
-            Already have an account? 
-            <a href="{{ url_for('auth.login') }}" class="text-indigo-600 hover:text-indigo-800">Login here</a>
-        </p>
+        <div class="form-links">
+            <div class="divider">
+                <span>OR</span>
+            </div>
+            <p>
+                Already have an account? 
+                <a href="{{ url_for('auth.login') }}">
+                    <i class="fas fa-sign-in-alt"></i> Login here
+                </a>
+            </p>
+        </div>
     </div>
 </div>
 {% endblock %}

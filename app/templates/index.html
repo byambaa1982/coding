@@ -1,32 +1,112 @@
 {% extends "base.html" %}
 
-{% block title %}Home - Tutorial E-Commerce Platform{% endblock %}
+{% block title %}Home - CodeLearn{% endblock %}
 
 {% block content %}
-<div class="text-center">
-    <h1 class="text-4xl font-bold text-gray-900 mb-4">
-        Welcome to Tutorial E-Commerce Platform
-    </h1>
-    <p class="text-xl text-gray-600 mb-8">
-        Learn programming through interactive courses
-    </p>
-    
-    {% if current_user.is_authenticated %}
-        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 class="text-2xl font-bold mb-4">Welcome back, {{ current_user.full_name or current_user.email }}!</h2>
-            <p class="text-gray-600">You are successfully logged in.</p>
+<!-- Hero Section -->
+<div class="hero">
+    <div class="hero-content">
+        <h1 class="hero-title">
+            <i class="fas fa-rocket" style="color: var(--primary);"></i>
+            Master Python & SQL Through Practice
+        </h1>
+        <p class="hero-subtitle">
+            Learn programming the right way with interactive courses, real-time code execution, and instant feedback.
+        </p>
+        
+        {% if current_user.is_authenticated %}
+            <div class="card welcome-card">
+                <div class="welcome-header">
+                    <i class="fas fa-user-circle" style="font-size: 48px; color: var(--primary);"></i>
+                    <div>
+                        <h2 style="margin: 0; color: var(--text-primary);">Welcome back, {{ current_user.full_name or current_user.email.split('@')[0] }}!</h2>
+                        <p style="margin: 8px 0 0; color: var(--text-secondary);">Ready to continue your learning journey?</p>
+                    </div>
+                </div>
+                <div class="welcome-actions">
+                    <a href="#" class="btn btn-primary btn-lg">
+                        <i class="fas fa-book-open"></i> My Courses
+                    </a>
+                    <a href="#" class="btn btn-secondary btn-lg">
+                        <i class="fas fa-search"></i> Browse Catalog
+                    </a>
+                </div>
+            </div>
+        {% else %}
+            <div class="hero-actions">
+                <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-user-plus"></i> Get Started Free
+                </a>
+                <a href="{{ url_for('auth.login') }}" class="btn btn-outline btn-lg">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="features">
+    <h2 class="section-title">Why Choose CodeLearn?</h2>
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fab fa-python"></i>
+            </div>
+            <h3>Python Mastery</h3>
+            <p>From basics to advanced topics, learn Python through hands-on coding exercises with instant feedback.</p>
         </div>
-    {% else %}
-        <div class="space-x-4">
-            <a href="{{ url_for('auth.register') }}" 
-               class="bg-indigo-600 text-white px-6 py-3 rounded-md text-lg font-medium hover:bg-indigo-700 inline-block">
-                Get Started
-            </a>
-            <a href="{{ url_for('auth.login') }}" 
-               class="bg-gray-200 text-gray-800 px-6 py-3 rounded-md text-lg font-medium hover:bg-gray-300 inline-block">
-                Login
-            </a>
+        
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-database"></i>
+            </div>
+            <h3>SQL Expertise</h3>
+            <p>Master database queries with real SQL databases. Practice with actual data and see results in real-time.</p>
         </div>
-    {% endif %}
+        
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-code"></i>
+            </div>
+            <h3>Interactive Editor</h3>
+            <p>Write code in our browser-based editor with syntax highlighting, auto-completion, and error detection.</p>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-bolt"></i>
+            </div>
+            <h3>Instant Feedback</h3>
+            <p>Run your code instantly and get immediate feedback. No setup required, everything runs in the cloud.</p>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-certificate"></i>
+            </div>
+            <h3>Certificates</h3>
+            <p>Earn verified certificates upon course completion to showcase your skills to employers.</p>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <h3>Track Progress</h3>
+            <p>Monitor your learning journey with detailed analytics and personalized recommendations.</p>
+        </div>
+    </div>
+</div>
+
+<!-- CTA Section -->
+<div class="cta-section">
+    <div class="cta-content">
+        <h2>Start Learning Today</h2>
+        <p>Join thousands of developers improving their skills with CodeLearn</p>
+        <a href="{{ url_for('auth.register') }}" class="btn btn-secondary btn-lg">
+            <i class="fas fa-rocket"></i> Start Free Trial
+        </a>
+    </div>
 </div>
 {% endblock %}

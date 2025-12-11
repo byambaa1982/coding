@@ -1,52 +1,61 @@
 {% extends "base.html" %}
 
-{% block title %}Login - Tutorial E-Commerce Platform{% endblock %}
+{% block title %}Login - CodeLearn{% endblock %}
 
 {% block content %}
-<div class="max-w-md mx-auto">
-    <div class="bg-white rounded-lg shadow-md p-8">
-        <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">Login</h2>
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <i class="fas fa-sign-in-alt"></i>
+            <h2>Welcome Back</h2>
+            <p>Login to continue your learning journey</p>
+        </div>
         
         <form method="POST" novalidate>
             {{ form.hidden_tag() }}
             
             <!-- Email -->
-            <div class="mb-4">
-                {{ form.email.label(class="block text-gray-700 font-medium mb-2") }}
-                {{ form.email(class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500") }}
+            <div class="form-group">
+                {{ form.email.label(class="form-label") }}
+                {{ form.email(class="form-input", placeholder="Enter your email") }}
                 {% if form.email.errors %}
-                    <p class="text-red-500 text-sm mt-1">{{ form.email.errors[0] }}</p>
+                    <p class="form-error">{{ form.email.errors[0] }}</p>
                 {% endif %}
             </div>
             
             <!-- Password -->
-            <div class="mb-4">
-                {{ form.password.label(class="block text-gray-700 font-medium mb-2") }}
-                {{ form.password(class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500") }}
+            <div class="form-group">
+                {{ form.password.label(class="form-label") }}
+                {{ form.password(class="form-input", placeholder="Enter your password") }}
                 {% if form.password.errors %}
-                    <p class="text-red-500 text-sm mt-1">{{ form.password.errors[0] }}</p>
+                    <p class="form-error">{{ form.password.errors[0] }}</p>
                 {% endif %}
             </div>
             
-            <!-- Remember Me -->
-            <div class="mb-4 flex items-center">
-                {{ form.remember_me(class="mr-2") }}
-                {{ form.remember_me.label(class="text-gray-700") }}
+            <!-- Remember Me & Forgot Password -->
+            <div class="form-checkbox">
+                {{ form.remember_me() }}
+                {{ form.remember_me.label() }}
             </div>
             
             <!-- Submit -->
-            {{ form.submit(class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium") }}
+            {{ form.submit(class="btn btn-primary btn-lg btn-full") }}
         </form>
         
-        <div class="text-center mt-4 space-y-2">
-            <p class="text-gray-600">
-                <a href="{{ url_for('auth.request_password_reset') }}" class="text-indigo-600 hover:text-indigo-800">
-                    Forgot password?
+        <div class="form-links">
+            <p>
+                <a href="{{ url_for('auth.request_password_reset') }}">
+                    <i class="fas fa-key"></i> Forgot password?
                 </a>
             </p>
-            <p class="text-gray-600">
+            <div class="divider">
+                <span>OR</span>
+            </div>
+            <p>
                 Don't have an account? 
-                <a href="{{ url_for('auth.register') }}" class="text-indigo-600 hover:text-indigo-800">Register here</a>
+                <a href="{{ url_for('auth.register') }}">
+                    <i class="fas fa-user-plus"></i> Sign up now
+                </a>
             </p>
         </div>
     </div>

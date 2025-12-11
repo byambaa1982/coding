@@ -3,67 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Tutorial E-Commerce Platform{% endblock %}</title>
+    <meta name="description" content="Learn Python and SQL through interactive courses with hands-on practice">
+    <meta name="theme-color" content="#1877F2">
+    <title>{% block title %}CodeLearn - Interactive Python & SQL Courses{% endblock %}</title>
     
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💻</text></svg>">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     
     {% block extra_css %}{% endblock %}
 </head>
-<body class="bg-gray-50">
+<body>
     <!-- Navigation -->
-    <nav class="bg-white shadow-lg">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex">
-                    <div class="flex-shrink-0 flex items-center">
-                        <a href="{{ url_for('main.index') }}" class="text-2xl font-bold text-indigo-600">
-                            TutorialShop
+    <nav style="background: var(--bg-secondary); box-shadow: var(--shadow-sm); position: sticky; top: 0; z-index: 100;">
+        <div style="max-width: 1200px; margin: 0 auto; padding: 0 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; height: 56px;">
+                <!-- Logo -->
+                <div style="display: flex; align-items: center; gap: 24px;">
+                    <a href="{{ url_for('main.index') }}" style="display: flex; align-items: center; gap: 8px; text-decoration: none;">
+                        <i class="fas fa-code" style="font-size: 24px; color: var(--primary);"></i>
+                        <span style="font-size: 20px; font-weight: 700; color: var(--primary);">CodeLearn</span>
+                    </a>
+                    
+                    <!-- Desktop Navigation -->
+                    <div class="mobile-hidden" style="display: flex; gap: 4px;">
+                        <a href="{{ url_for('main.index') }}" class="nav-link {% if request.endpoint == 'main.index' %}active{% endif %}">
+                            <i class="fas fa-home"></i> Home
                         </a>
-                    </div>
-                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
-                        <a href="{{ url_for('main.index') }}" 
-                           class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                            Home
+                        <a href="{{ url_for('main.about') }}" class="nav-link {% if request.endpoint == 'main.about' %}active{% endif %}">
+                            <i class="fas fa-info-circle"></i> About
                         </a>
-                        <a href="{{ url_for('main.about') }}" 
-                           class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                            About
+                        <a href="#" class="nav-link">
+                            <i class="fab fa-python"></i> Python
+                        </a>
+                        <a href="#" class="nav-link">
+                            <i class="fas fa-database"></i> SQL
                         </a>
                     </div>
                 </div>
-                <div class="hidden sm:ml-6 sm:flex sm:items-center">
+                
+                <!-- Right Side -->
+                <div style="display: flex; align-items: center; gap: 12px;">
                     {% if current_user.is_authenticated %}
-                        <span class="text-gray-700 mr-4">Hello, {{ current_user.full_name or current_user.email }}!</span>
-                        <a href="{{ url_for('auth.logout') }}" 
-                           class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700">
-                            Logout
-                        </a>
+                        <!-- User Menu -->
+                        <div class="mobile-hidden" style="display: flex; align-items: center; gap: 12px;">
+                            <span style="color: var(--text-secondary); font-size: 14px;">
+                                <i class="fas fa-user-circle"></i> {{ current_user.full_name or current_user.email.split('@')[0] }}
+                            </span>
+                            <a href="{{ url_for('auth.logout') }}" class="btn btn-outline btn-sm">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </a>
+                        </div>
+                        <!-- Mobile User -->
+                        <div class="desktop-hidden">
+                            <button onclick="toggleMobileMenu()" style="padding: 8px; background: transparent; border: none; cursor: pointer;">
+                                <i class="fas fa-bars" style="font-size: 20px; color: var(--text-primary);"></i>
+                            </button>
+                        </div>
                     {% else %}
-                        <a href="{{ url_for('auth.login') }}" 
-                           class="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
-                            Login
-                        </a>
-                        <a href="{{ url_for('auth.register') }}" 
-                           class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 ml-3">
-                            Register
-                        </a>
+                        <!-- Auth Links -->
+                        <div class="mobile-hidden" style="display: flex; gap: 8px;">
+                            <a href="{{ url_for('auth.login') }}" class="btn btn-outline btn-sm">
+                                <i class="fas fa-sign-in-alt"></i> Login
+                            </a>
+                            <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-user-plus"></i> Sign Up
+                            </a>
+                        </div>
+                        <!-- Mobile Toggle -->
+                        <div class="desktop-hidden">
+                            <button onclick="toggleMobileMenu()" style="padding: 8px; background: transparent; border: none; cursor: pointer;">
+                                <i class="fas fa-bars" style="font-size: 20px; color: var(--text-primary);"></i>
+                            </button>
+                        </div>
                     {% endif %}
                 </div>
             </div>
         </div>
     </nav>
+    
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="mobile-menu">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+            <a href="{{ url_for('main.index') }}" class="nav-link">
+                <i class="fas fa-home"></i> Home
+            </a>
+            <a href="{{ url_for('main.about') }}" class="nav-link">
+                <i class="fas fa-info-circle"></i> About
+            </a>
+            <a href="#" class="nav-link">
+                <i class="fab fa-python"></i> Python Courses
+            </a>
+            <a href="#" class="nav-link">
+                <i class="fas fa-database"></i> SQL Courses
+            </a>
+            <div style="border-top: 1px solid var(--border-light); margin: 8px 0; padding-top: 8px;">
+                {% if current_user.is_authenticated %}
+                    <div style="padding: 8px; color: var(--text-secondary); font-size: 14px;">
+                        <i class="fas fa-user-circle"></i> {{ current_user.full_name or current_user.email.split('@')[0] }}
+                    </div>
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline" style="width: 100%;">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-outline" style="width: 100%; margin-bottom: 8px;">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </a>
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-primary" style="width: 100%;">
+                        <i class="fas fa-user-plus"></i> Sign Up
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
 
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-                {% for category, message in messages %}
-                    <div class="rounded-md p-4 mb-4 {% if category == 'success' %}bg-green-50 text-green-800{% elif category == 'danger' or category == 'error' %}bg-red-50 text-red-800{% elif category == 'warning' %}bg-yellow-50 text-yellow-800{% else %}bg-blue-50 text-blue-800{% endif %}">
-                        {{ message }}
+            <div class="container">
+                {% for category, message in messages %}\n                    <div class="alert alert-{{ 'danger' if category == 'error' else category }}">
+                        {% if category == 'success' %}
+                            <i class="fas fa-check-circle text-success"></i>
+                        {% elif category == 'danger' or category == 'error' %}
+                            <i class="fas fa-exclamation-circle text-danger"></i>
+                        {% elif category == 'warning' %}
+                            <i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i>
+                        {% else %}
+                            <i class="fas fa-info-circle text-primary"></i>
+                        {% endif %}
+                        <span>{{ message }}</span>
                     </div>
                 {% endfor %}
             </div>
@@ -71,16 +145,69 @@
     {% endwith %}
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="container main-content">
         {% block content %}{% endblock %}
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white mt-12">
-        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-            <p class="text-center text-gray-500 text-sm">
-                &copy; 2024 Tutorial E-Commerce Platform. All rights reserved.
-            </p>
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <!-- About -->
+                <div>
+                    <div class="logo-footer">
+                        <i class="fas fa-code"></i>
+                        <h3>CodeLearn</h3>
+                    </div>
+                    <p class="footer-text">
+                        Master Python and SQL through interactive, hands-on courses. Learn by doing with real-time code execution and feedback.
+                    </p>
+                </div>
+                
+                <!-- Quick Links -->
+                <div>
+                    <h4 class="footer-title">Quick Links</h4>
+                    <div class="footer-links">
+                        <a href="{{ url_for('main.index') }}">
+                            <i class="fas fa-home"></i> Home
+                        </a>
+                        <a href="{{ url_for('main.about') }}">
+                            <i class="fas fa-info-circle"></i> About Us
+                        </a>
+                        <a href="#">
+                            <i class="fab fa-python"></i> Python Courses
+                        </a>
+                        <a href="#">
+                            <i class="fas fa-database"></i> SQL Courses
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Connect -->
+                <div>
+                    <h4 class="footer-title">Connect With Us</h4>
+                    <div class="social-links">
+                        <a href="#" class="social-icon">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="social-icon">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="social-icon">
+                            <i class="fab fa-github"></i>
+                        </a>
+                        <a href="#" class="social-icon">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>
+                    &copy; 2025 CodeLearn. All rights reserved. Made with <i class="fas fa-heart text-danger"></i> for developers
+                </p>
+            </div>
         </div>
     </footer>
 
