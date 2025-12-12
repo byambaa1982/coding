@@ -128,4 +128,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-console.log('CodeLearn Platform - Ready! 🚀');
+console.log('DataLogicHub Platform - Ready! 🚀');

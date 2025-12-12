@@ -966,7 +966,7 @@ h4 { font-size: 1.5rem; }
 .text-gray-700 { color: var(--text-primary); }
 .text-gray-800 { color: var(--text-primary); }
 .text-gray-900 { color: var(--text-primary); }
-.text-white { color: white; }
+.text-white { color: white !important; }
 .text-blue-600 { color: var(--primary); }
 .text-blue-700 { color: var(--primary-dark); }
 .text-blue-100 { color: #DBEAFE; }
