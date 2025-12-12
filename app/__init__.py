@@ -29,6 +29,10 @@ def create_app(config_name='development'):
     mail.init_app(app)
     csrf.init_app(app)
     
+    # Initialize cache (Phase 9.1)
+    from app.cache import cache_manager
+    cache_manager.init_app(app)
+    
     # User loader for Flask-Login
     from app.models import TutorialUser
     

@@ -2,7 +2,13 @@
 SQL Sandbox Manager
 Manages isolated MySQL database instances for SQL practice
 """
-import docker
+try:
+    import docker
+    DOCKER_AVAILABLE = True
+except ImportError:
+    DOCKER_AVAILABLE = False
+    docker = None
+
 import mysql.connector
 import time
 import logging

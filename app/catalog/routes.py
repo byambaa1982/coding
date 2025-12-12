@@ -6,6 +6,7 @@ from app.catalog import catalog_bp
 from app.models import NewTutorial, Lesson
 from app.extensions import db
 from sqlalchemy import or_, func
+from app.cache import cached, get_cached_course_catalog, cache_course_catalog, invalidate_cache
 
 
 @catalog_bp.route('/')
@@ -17,6 +18,9 @@ def index():
     category = request.args.get('category', None)
     search = request.args.get('search', None)
     sort = request.args.get('sort', 'newest')
+    
+    # Try to use cached data for common queries (no search/filters on page 1)
+    cache_key = f"catalog:page{page}:{course_type}:{difficulty}:{category}:{search}:{sort}"
     
     # Base query - only published courses
     query = NewTutorial.query.filter_by(status='published')
@@ -58,13 +62,12 @@ def index():
     
     tutorials = query.paginate(page=page, per_page=12, error_out=False)
     
-    # Get counts for filtering UI
-    python_count = NewTutorial.query.filter_by(status='published', course_type='python').count()
-    sql_count = NewTutorial.query.filter_by(status='published', course_type='sql').count()
+    # Get counts for filtering UI (cached for 10 minutes)
+    python_count = get_cached_catalog_count('python') or cache_catalog_count('python')
+    sql_count = get_cached_catalog_count('sql') or cache_catalog_count('sql')
     
-    # Get unique categories
-    categories = db.session.query(NewTutorial.category).filter_by(status='published').distinct().all()
-    categories = [cat[0] for cat in categories]
+    # Get unique categories (cached)
+    categories = get_cached_categories() or cache_categories()
     
     return render_template('catalog/index.html',
                          tutorials=tutorials,
@@ -76,6 +79,35 @@ def index():
                          current_category=category,
                          search_term=search,
                          current_sort=sort)
+
+
+def get_cached_catalog_count(course_type):
+    """Get cached course count."""
+    from app.cache import cache_manager
+    return cache_manager.get(f'catalog:count:{course_type}')
+
+
+def cache_catalog_count(course_type):
+    """Cache course count for 10 minutes."""
+    from app.cache import cache_manager
+    count = NewTutorial.query.filter_by(status='published', course_type=course_type).count()
+    cache_manager.set(f'catalog:count:{course_type}', count, timeout=600)
+    return count
+
+
+def get_cached_categories():
+    """Get cached categories list."""
+    from app.cache import cache_manager
+    return cache_manager.get('catalog:categories')
+
+
+def cache_categories():
+    """Cache categories list for 10 minutes."""
+    from app.cache import cache_manager
+    categories = db.session.query(NewTutorial.category).filter_by(status='published').distinct().all()
+    categories = [cat[0] for cat in categories]
+    cache_manager.set('catalog:categories', categories, timeout=600)
+    return categories
 
 
 @catalog_bp.route('/python')
@@ -93,17 +125,31 @@ def python_courses():
         page=page, per_page=12, error_out=False
     )
     
-    # Get featured Python courses
-    featured = NewTutorial.query.filter_by(
-        status='published', 
-        course_type='python', 
-        is_featured=True
-    ).limit(3).all()
+    # Get featured Python courses (cached for 30 minutes)
+    featured = get_cached_featured('python') or cache_featured('python')
     
     return render_template('catalog/python.html',
                          tutorials=tutorials,
                          featured=featured,
                          current_difficulty=difficulty)
+
+
+def get_cached_featured(course_type):
+    """Get cached featured courses."""
+    from app.cache import cache_manager
+    return cache_manager.get(f'catalog:featured:{course_type}')
+
+
+def cache_featured(course_type):
+    """Cache featured courses for 30 minutes."""
+    from app.cache import cache_manager
+    featured = NewTutorial.query.filter_by(
+        status='published',
+        course_type=course_type,
+        is_featured=True
+    ).limit(6).all()
+    cache_manager.set(f'catalog:featured:{course_type}', featured, timeout=1800)
+    return featured
 
 
 @catalog_bp.route('/sql')

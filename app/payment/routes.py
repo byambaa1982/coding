@@ -84,6 +84,47 @@ def cart():
                          coupon=coupon)
 
 
+@payment_bp.route('/enroll-free/<int:tutorial_id>', methods=['POST'])
+@login_required
+def enroll_free(tutorial_id):
+    """Enroll in a free course directly."""
+    tutorial = NewTutorial.query.get_or_404(tutorial_id)
+    
+    # Verify it's a free course
+    if not tutorial.is_free:
+        flash('This course is not free. Please add it to cart.', 'error')
+        return redirect(url_for('catalog.course_detail', slug=tutorial.slug))
+    
+    # Check if already enrolled
+    existing_enrollment = TutorialEnrollment.query.filter_by(
+        user_id=current_user.id,
+        tutorial_id=tutorial_id,
+        status='active'
+    ).first()
+    
+    if existing_enrollment:
+        flash('You are already enrolled in this course!', 'info')
+        return redirect(url_for('learning.tutorial_overview', tutorial_id=tutorial_id))
+    
+    # Check if tutorial is published
+    if tutorial.status != 'published':
+        flash('This course is not available.', 'error')
+        return redirect(url_for('catalog.index'))
+    
+    # Create enrollment directly
+    enrollment = TutorialEnrollment(
+        user_id=current_user.id,
+        tutorial_id=tutorial_id,
+        status='active',
+        enrollment_type='free'
+    )
+    db.session.add(enrollment)
+    db.session.commit()
+    
+    flash(f'Successfully enrolled in "{tutorial.title}"! Start learning now.', 'success')
+    return redirect(url_for('learning.tutorial_overview', tutorial_id=tutorial_id))
+
+
 @payment_bp.route('/add-to-cart/<int:tutorial_id>', methods=['POST'])
 @login_required
 def add_to_cart(tutorial_id):

@@ -66,12 +66,12 @@
 
                         {% if current_user.is_authenticated %}
                             {% if is_enrolled %}
-                            <a href="{{ url_for('account.my_courses') }}" 
+                            <a href="{{ url_for('learning.tutorial_overview', tutorial_id=tutorial.id) }}" 
                                class="block w-full bg-green-600 text-center text-white px-6 py-3 rounded-lg hover:bg-green-700 transition font-semibold mb-3">
-                                <i class="fas fa-check-circle mr-2"></i> Already Enrolled
+                                <i class="fas fa-book-open mr-2"></i> Go to Course
                             </a>
                             {% elif tutorial.is_free %}
-                            <form method="POST" action="{{ url_for('payment.add_to_cart', tutorial_id=tutorial.id) }}">
+                            <form method="POST" action="{{ url_for('payment.enroll_free', tutorial_id=tutorial.id) }}">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                 <button type="submit" class="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition font-semibold mb-3">
                                     <i class="fas fa-gift mr-2"></i> Enroll for Free
@@ -151,13 +151,28 @@
                                                 {% endif %}
                                             </div>
                                         </div>
-                                        <div class="text-sm text-gray-500 ml-4">
-                                            {% if lesson.is_free_preview %}
-                                            <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
-                                                <i class="fas fa-unlock mr-1"></i> Preview
+                                        <div class="flex items-center gap-2">
+                                            {% if is_enrolled or lesson.is_free_preview %}
+                                            <a href="{{ url_for('learning.view_lesson', lesson_id=lesson.id) }}" 
+                                               class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-sm font-medium">
+                                                <i class="fas fa-book-open mr-1"></i> View Lesson
+                                            </a>
+                                            {% if tutorial.course_type == 'python' %}
+                                            <a href="{{ url_for('python_practice.lesson_exercises', lesson_id=lesson.id) }}" 
+                                               class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition text-sm font-medium">
+                                                <i class="fas fa-code mr-1"></i> Practice
+                                            </a>
+                                            {% endif %}
+                                            {% else %}
+                                            <span class="text-sm text-gray-500">
+                                                {% if lesson.is_free_preview %}
+                                                <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                                                    <i class="fas fa-unlock mr-1"></i> Preview
+                                                </span>
+                                                {% elif lesson.estimated_duration_minutes %}
+                                                {{ lesson.estimated_duration_minutes }} min
+                                                {% endif %}
                                             </span>
-                                            {% elif lesson.estimated_duration_minutes %}
-                                            {{ lesson.estimated_duration_minutes }} min
                                             {% endif %}
                                         </div>
                                     </div>

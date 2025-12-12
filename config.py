@@ -42,6 +42,12 @@ class Config:
     SQLALCHEMY_POOL_PRE_PING = True
     SQLALCHEMY_POOL_RECYCLE = 280
     
+    # Redis Cache (Phase 9.1)
+    REDIS_URL = os.environ.get('REDIS_URL') or 'redis://localhost:6379/0'
+    CACHE_TYPE = 'redis'
+    CACHE_REDIS_URL = REDIS_URL
+    CACHE_DEFAULT_TIMEOUT = 300  # 5 minutes default
+    
     # Session
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
     SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
