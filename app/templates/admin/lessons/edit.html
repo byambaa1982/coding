@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Lesson - Admin{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Edit Lesson: {{ lesson.title }}</h1>
+        <div class="flex gap-4 text-sm">
+            <a href="{{ url_for('learning.view_lesson', lesson_id=lesson.id) }}" class="text-blue-600 hover:underline" target="_blank">
+                <i class="fas fa-external-link-alt mr-1"></i> View Lesson
+            </a>
+            <a href="{{ url_for('admin.course_edit', course_id=lesson.tutorial_id) }}" class="text-gray-600 hover:underline">
+                <i class="fas fa-arrow-left mr-1"></i> Back to Course
+            </a>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+        <form method="POST" action="{{ url_for('admin.lesson_edit', lesson_id=lesson.id) }}">
+            {{ form.hidden_tag() }}
+            
+            <div class="space-y-4">
+                <!-- Title -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.title.label }}</label>
+                    {{ form.title(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                    {% if form.title.errors %}
+                        <p class="text-red-600 text-sm mt-1">{{ form.title.errors[0] }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Slug -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.slug.label }}</label>
+                    {{ form.slug(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                    <p class="text-sm text-gray-500 mt-1">URL-friendly identifier</p>
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.description.label }}</label>
+                    {{ form.description(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent", rows="3") }}
+                </div>
+
+                <!-- Section Name & Order -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.section_name.label }}</label>
+                        {{ form.section_name(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.order_index.label }}</label>
+                        {{ form.order_index(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                    </div>
+                </div>
+
+                <!-- Content Type -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.content_type.label }}</label>
+                    {{ form.content_type(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                </div>
+
+                <!-- Content (HTML/Markdown) -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.content.label }}</label>
+                    {{ form.content(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm", rows="15") }}
+                    <p class="text-sm text-gray-500 mt-1">Supports HTML. Use &lt;h2&gt;, &lt;h3&gt;, &lt;p&gt;, &lt;pre&gt;&lt;code&gt;, &lt;ul&gt;, &lt;ol&gt; tags</p>
+                </div>
+
+                <!-- Video URL -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.video_url.label }}</label>
+                    {{ form.video_url(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                    <p class="text-sm text-gray-500 mt-1">Optional video embed URL</p>
+                </div>
+
+                <!-- Duration & Free Preview -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.estimated_duration_minutes.label }}</label>
+                        {{ form.estimated_duration_minutes(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.video_duration_seconds.label }}</label>
+                        {{ form.video_duration_seconds(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                    </div>
+                </div>
+
+                <!-- Free Preview Checkbox -->
+                <div class="flex items-center">
+                    {{ form.is_free_preview(class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500") }}
+                    <label class="ml-2 text-sm text-gray-700">{{ form.is_free_preview.label.text }}</label>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="flex gap-4 pt-4 border-t">
+                    <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        <i class="fas fa-save mr-2"></i> Save Changes
+                    </button>
+                    <a href="{{ url_for('admin.course_edit', course_id=lesson.tutorial_id) }}" class="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition">
+                        Cancel
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

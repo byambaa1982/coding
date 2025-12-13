@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Exercise - Admin{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-5xl">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Edit Exercise: {{ exercise.title }}</h1>
+        <div class="flex gap-4 text-sm">
+            <a href="{{ url_for('python_practice.view_exercise' if exercise.exercise_type == 'python' else 'sql_practice.view_exercise', exercise_id=exercise.id) }}" 
+               class="text-blue-600 hover:underline" target="_blank">
+                <i class="fas fa-external-link-alt mr-1"></i> View Exercise
+            </a>
+            <a href="{{ url_for('admin.course_edit', course_id=exercise.tutorial_id) }}" class="text-gray-600 hover:underline">
+                <i class="fas fa-arrow-left mr-1"></i> Back to Course
+            </a>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+        <!-- Display Form Errors -->
+        {% if form.errors %}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <strong>Form validation errors:</strong>
+            <ul class="list-disc list-inside mt-2">
+            {% for field, errors in form.errors.items() %}
+                {% for error in errors %}
+                <li>{{ field }}: {{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('admin.exercise_edit', exercise_id=exercise.id) }}">
+            {{ form.hidden_tag() }}
+            
+            <div class="space-y-4">
+                <!-- Title & Slug -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.title.label }}</label>
+                        {{ form.title(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                        {% if form.title.errors %}
+                            <p class="text-red-600 text-sm mt-1">{{ form.title.errors[0] }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.slug.label }}</label>
+                        {{ form.slug(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                    </div>
+                </div>
+
+                <!-- Exercise Type, Difficulty, Points -->
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.exercise_type.label }}</label>
+                        {{ form.exercise_type(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.difficulty.label }}</label>
+                        {{ form.difficulty(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.points.label }}</label>
+                        {{ form.points(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                    </div>
+                </div>
+
+                <!-- Lesson Assignment -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Lesson (Optional)</label>
+                        <select name="lesson_id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">-- No Lesson --</option>
+                            {% for lesson in lessons %}
+                            <option value="{{ lesson.id }}" {% if lesson.id == exercise.lesson_id %}selected{% endif %}>
+                                {{ lesson.order_index }}. {{ lesson.title }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.order_index.label }}</label>
+                        {{ form.order_index(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.description.label }}</label>
+                    {{ form.description(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent", rows="4") }}
+                    <p class="text-sm text-gray-500 mt-1">HTML supported. Instructions shown to students.</p>
+                </div>
+
+                <!-- Starter Code -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.starter_code.label }}</label>
+                    {{ form.starter_code(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm", rows="8") }}
+                    <p class="text-sm text-gray-500 mt-1">Initial code provided to students</p>
+                </div>
+
+                <!-- Solution Code -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.solution_code.label }}</label>
+                    {{ form.solution_code(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm", rows="8") }}
+                    <p class="text-sm text-gray-500 mt-1">Complete solution (shown after attempts)</p>
+                </div>
+
+                <!-- Test Cases -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.test_cases.label }}</label>
+                    {{ form.test_cases(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm", rows="10") }}
+                    <p class="text-sm text-gray-500 mt-1">
+                        JSON format: <code class="bg-gray-100 px-2 py-1 rounded">[{"test_number": 1, "function_name": "solution", "input": [], "expected": "result", "description": "Test description"}]</code>
+                    </p>
+                </div>
+
+                <!-- Hints -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.hints.label }}</label>
+                    {{ form.hints(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm", rows="5") }}
+                    <p class="text-sm text-gray-500 mt-1">
+                        JSON array: <code class="bg-gray-100 px-2 py-1 rounded">["Hint 1", "Hint 2", "Hint 3"]</code>
+                    </p>
+                </div>
+
+                <!-- Expected Output (for both Python and SQL) -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.expected_output.label }}</label>
+                    {{ form.expected_output(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm", rows="6") }}
+                    <p class="text-sm text-gray-500 mt-1">JSON format for expected results (useful for both Python and SQL exercises)</p>
+                </div>
+
+                <!-- SQL-specific fields (conditional) -->
+                <div id="sql-fields" style="display: none;">
+                    <h3 class="text-lg font-bold mb-3 pt-4 border-t">SQL-Specific Fields</h3>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.database_schema.label }}</label>
+                        {{ form.database_schema(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm", rows="8") }}
+                        <p class="text-sm text-gray-500 mt-1">DDL statements (CREATE TABLE...)</p>
+                    </div>
+
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.sample_data.label }}</label>
+                        {{ form.sample_data(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm", rows="8") }}
+                        <p class="text-sm text-gray-500 mt-1">INSERT statements for sample data</p>
+                    </div>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="flex gap-4 pt-4 border-t">
+                    <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        <i class="fas fa-save mr-2"></i> Save Changes
+                    </button>
+                    <a href="{{ url_for('admin.course_edit', course_id=exercise.tutorial_id) }}" class="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition">
+                        Cancel
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Show/hide SQL fields based on exercise type
+document.addEventListener('DOMContentLoaded', function() {
+    const exerciseTypeSelect = document.querySelector('select[name="exercise_type"]');
+    const sqlFields = document.getElementById('sql-fields');
+    
+    function toggleSqlFields() {
+        if (exerciseTypeSelect.value === 'sql') {
+            sqlFields.style.display = 'block';
+        } else {
+            sqlFields.style.display = 'none';
+        }
+    }
+    
+    exerciseTypeSelect.addEventListener('change', toggleSqlFields);
+    toggleSqlFields(); // Initial check
+});
+</script>
+{% endblock %}
