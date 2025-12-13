@@ -535,6 +535,26 @@
     <!-- Left Panel: Lesson Content -->
     <div class="lesson-panel">
         <div class="lesson-content">
+            <!-- Breadcrumb Navigation -->
+            {% if enrollment %}
+            <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #e5e7eb;">
+                <nav style="font-size: 14px; color: #6b7280;">
+                    <a href="{{ url_for('account.my_courses') }}" style="color: #6366f1; text-decoration: none; hover: text-decoration: underline;">
+                        My Courses
+                    </a>
+                    <span style="margin: 0 8px;">/</span>
+                    <a href="{{ url_for('python_practice.course_subtopics', enrollment_id=enrollment.id) }}" 
+                       style="color: #6366f1; text-decoration: none; hover: text-decoration: underline;">
+                        {{ exercise.tutorial.title }}
+                    </a>
+                    {% if lesson_content %}
+                    <span style="margin: 0 8px;">/</span>
+                    <span style="color: #1f2937; font-weight: 500;">{{ lesson_content.title }}</span>
+                    {% endif %}
+                </nav>
+            </div>
+            {% endif %}
+            
             {% if lesson_content %}
             <!-- Lesson Header -->
             <div class="lesson-header">
@@ -680,10 +700,11 @@
                class="nav-btn nav-btn-primary">
                 Next Exercise →
             </a>
-            {% elif exercises_completed_count == total_exercises_in_lesson and enrollment %}
-            <a href="{{ url_for('account.continue_learning', enrollment_id=enrollment.id) }}" 
+            {% elif enrollment %}
+            <!-- When all exercises completed, go back to subtopics -->
+            <a href="{{ url_for('python_practice.course_subtopics', enrollment_id=enrollment.id) }}" 
                class="nav-btn nav-btn-primary">
-                🎉 Continue to Next Lesson →
+                🎉 Back to Subtopics →
             </a>
             {% endif %}
         </div>
@@ -903,6 +924,27 @@ function displayTestResults(testResults, passed, failed, status) {
         // Scroll the exercise panel to show the test results
         testSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
+    
+    // Check if all exercises in lesson completed and show completion modal
+    if (status === 'passed') {
+        checkLessonCompletion();
+    }
+}
+
+// Check if all exercises in current lesson are completed
+function checkLessonCompletion() {
+    // Get the "Back to Subtopics" button
+    const backButton = document.querySelector('.exercise-nav-buttons .nav-btn-primary');
+    
+    // If button text contains "Back to Subtopics", all exercises are completed
+    if (backButton && backButton.textContent.includes('Back to Subtopics')) {
+        // Show a nice congratulations modal after a short delay
+        setTimeout(() => {
+            if (confirm('🎉 Congratulations! You\'ve completed all exercises in this lesson!\n\nWould you like to return to the subtopics page?')) {
+                window.location.href = backButton.href;
+            }
+        }, 1000);
+    }
 }
 
 // Utility function to escape HTML

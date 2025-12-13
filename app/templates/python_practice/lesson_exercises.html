@@ -4,13 +4,21 @@
 
 {% block content %}
 <div style="max-width: 1200px; margin: 0 auto; padding: 24px 16px;">
+    <!-- Back Button -->
+    <div style="margin-bottom: 16px;">
+        <a href="{{ url_for('python_practice.course_subtopics', enrollment_id=enrollment.id) }}" 
+           style="color: #6366f1; text-decoration: none; font-size: 14px; display: inline-flex; align-items: center; gap: 8px;">
+            <i class="fas fa-arrow-left"></i> Back to Subtopics
+        </a>
+    </div>
+    
     <!-- Breadcrumb -->
     <div style="display: flex; gap: 8px; margin-bottom: 24px; font-size: 14px; color: var(--text-secondary);">
         <a href="{{ url_for('main.index') }}" style="color: var(--primary); text-decoration: none;">Home</a>
         <span>/</span>
         <a href="{{ url_for('catalog.course_detail', slug=tutorial.slug) }}" style="color: var(--primary); text-decoration: none;">{{ tutorial.title }}</a>
         <span>/</span>
-        <a href="{{ url_for('learning.tutorial_overview', tutorial_id=tutorial.id) }}" style="color: var(--primary); text-decoration: none;">Curriculum</a>
+        <a href="{{ url_for('python_practice.course_subtopics', enrollment_id=enrollment.id) }}" style="color: var(--primary); text-decoration: none;">Subtopics</a>
         <span>/</span>
         <span>{{ lesson.title }}</span>
     </div>

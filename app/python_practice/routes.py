@@ -1,5 +1,7 @@
 # app/python_practice/routes.py
-"""Routes for Python code practice and execution."""
+"""Routes for Python code practice and execution.
+Updated: Added course_subtopics route for displaying lesson overview.
+"""
 
 import json
 from datetime import datetime
@@ -299,6 +301,65 @@ def get_submissions(exercise_id):
         })
     
     return jsonify({'submissions': submissions_data})
+
+
+@python_practice_bp.route('/course/<int:enrollment_id>/subtopics')
+@login_required
+def course_subtopics(enrollment_id):
+    """Display all subtopics (lessons) for a course with progress."""
+    enrollment = TutorialEnrollment.query.filter_by(
+        id=enrollment_id,
+        user_id=current_user.id,
+        status='active'
+    ).first_or_404()
+    
+    tutorial = enrollment.tutorial
+    
+    # Get all lessons for this tutorial (these are the subtopics)
+    lessons = Lesson.query.filter_by(
+        tutorial_id=tutorial.id
+    ).order_by(Lesson.order_index).all()
+    
+    # Build lesson progress data
+    lessons_with_progress = []
+    for lesson in lessons:
+        # Get all exercises for this lesson
+        exercises = Exercise.query.filter_by(
+            lesson_id=lesson.id,
+            exercise_type='python'
+        ).all()
+        
+        total_exercises = len(exercises)
+        if total_exercises == 0:
+            continue  # Skip lessons without exercises
+        
+        # Count completed exercises
+        completed_exercises = 0
+        for exercise in exercises:
+            has_solved = ExerciseSubmission.query.filter_by(
+                user_id=current_user.id,
+                exercise_id=exercise.id,
+                status='passed'
+            ).first() is not None
+            if has_solved:
+                completed_exercises += 1
+        
+        # Calculate progress percentage
+        progress_percentage = (completed_exercises / total_exercises * 100) if total_exercises > 0 else 0
+        is_completed = completed_exercises == total_exercises
+        
+        lessons_with_progress.append({
+            'lesson': lesson,
+            'total_exercises': total_exercises,
+            'completed_exercises': completed_exercises,
+            'progress_percentage': progress_percentage,
+            'is_completed': is_completed
+        })
+    
+    return render_template('python_practice/course_subtopics.html',
+                         enrollment=enrollment,
+                         tutorial=tutorial,
+                         lessons=lessons_with_progress)
 
 
 @python_practice_bp.route('/lesson/<int:lesson_id>/exercises')
