@@ -22,6 +22,7 @@ from app.account.achievement_utils import (
 from app.account.certificate_utils import (
     get_user_certificates, verify_certificate, generate_certificate_pdf
 )
+from app.account.utils import get_continue_learning_destination
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +103,45 @@ def my_courses():
                          enrollments=enrollments,
                          course_type=course_type,
                          status_filter=status_filter)
+
+
+@account_bp.route('/continue-learning/<int:enrollment_id>')
+@login_required
+def continue_learning(enrollment_id):
+    """Smart routing for continue learning feature."""
+    # Verify enrollment belongs to user
+    enrollment = TutorialEnrollment.query.filter_by(
+        id=enrollment_id,
+        user_id=current_user.id
+    ).first_or_404()
+    
+    # Check if enrollment is active
+    if enrollment.status != 'active':
+        flash('This course enrollment is not active', 'error')
+        return redirect(url_for('account.my_courses'))
+    
+    # Check expiration
+    if enrollment.expires_at and enrollment.expires_at < datetime.utcnow():
+        flash('This course has expired', 'warning')
+        return redirect(url_for('account.my_courses'))
+    
+    # Get destination
+    destination = get_continue_learning_destination(
+        current_user.id, 
+        enrollment_id
+    )
+    
+    # Update last accessed timestamp
+    enrollment.updated_at = datetime.utcnow()
+    db.session.commit()
+    
+    # Log the event
+    logger.info(f"User {current_user.id} continued learning: "
+                f"Enrollment {enrollment_id}, "
+                f"Routed to {destination['type']}")
+    
+    # Redirect to destination
+    return redirect(destination['url'])
 
 
 @account_bp.route('/progress')

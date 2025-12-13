@@ -1,0 +1,5 @@
+lines = open('update_mock_course_data.py', 'r', encoding='utf-8').readlines()
+print('Line 14 (opening):', repr(lines[13]))
+print('Line 47 (closing):', repr(lines[46]))
+print('Line 14 quote count:', lines[13].count('"'))
+print('Line 47 quote count:', lines[46].count('"'))

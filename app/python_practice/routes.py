@@ -60,13 +60,64 @@ def view_exercise(exercise_id):
         status='passed'
     ).first() is not None
     
+    # Get all exercises in the same lesson (subtopic)
+    lesson_exercises = []
+    current_exercise_index = 0
+    next_exercise = None
+    prev_exercise = None
+    exercises_completed_count = 0
+    exercise_completion_map = {}  # Map of exercise_id to completion status
+    
+    if exercise.lesson_id:
+        lesson_exercises = Exercise.query.filter_by(
+            lesson_id=exercise.lesson_id
+        ).order_by(Exercise.order_index).all()
+        
+        # Build completion map for all exercises
+        for ex in lesson_exercises:
+            is_completed = ExerciseSubmission.query.filter_by(
+                user_id=current_user.id,
+                exercise_id=ex.id,
+                status='passed'
+            ).first() is not None
+            exercise_completion_map[ex.id] = is_completed
+            if is_completed:
+                exercises_completed_count += 1
+        
+        # Find current position and adjacent exercises
+        for idx, ex in enumerate(lesson_exercises):
+            if ex.id == exercise_id:
+                current_exercise_index = idx
+                if idx > 0:
+                    prev_exercise = lesson_exercises[idx - 1]
+                if idx < len(lesson_exercises) - 1:
+                    next_exercise = lesson_exercises[idx + 1]
+    
+    # Calculate subtopic progress
+    total_exercises_in_lesson = len(lesson_exercises)
+    subtopic_progress_percentage = (exercises_completed_count / total_exercises_in_lesson * 100) if total_exercises_in_lesson > 0 else 0
+    
+    # Get lesson content for display alongside exercise
+    lesson_content = None
+    if exercise.lesson:
+        lesson_content = exercise.lesson
+    
     return render_template('python_practice/exercise.html',
                          exercise=exercise,
                          enrollment=enrollment,
                          previous_submissions=previous_submissions,
                          hints=hints,
                          has_solved=has_solved,
-                         starter_code=exercise.starter_code or '# Write your code here\n')
+                         starter_code=exercise.starter_code or '# Write your code here\n',
+                         lesson_exercises=lesson_exercises,
+                         current_exercise_index=current_exercise_index,
+                         next_exercise=next_exercise,
+                         prev_exercise=prev_exercise,
+                         exercises_completed_count=exercises_completed_count,
+                         total_exercises_in_lesson=total_exercises_in_lesson,
+                         subtopic_progress_percentage=subtopic_progress_percentage,
+                         exercise_completion_map=exercise_completion_map,
+                         lesson_content=lesson_content)
 
 
 @python_practice_bp.route('/exercise/<int:exercise_id>/submit', methods=['POST'])

@@ -89,9 +89,11 @@
                 </div>
                 
                 <!-- Action Button -->
-                <a href="{{ url_for('catalog.course_detail', slug=enrollment.tutorial.slug) }}" 
+                <a href="{{ url_for('account.continue_learning', enrollment_id=enrollment.id) }}" 
                    class="block w-full bg-indigo-600 text-white text-center py-2 rounded-md font-semibold hover:bg-indigo-700 transition">
-                    {% if enrollment.is_completed %}
+                    {% if enrollment.progress_percentage == 0 %}
+                        Start Learning
+                    {% elif enrollment.is_completed %}
                         Review Course
                     {% else %}
                         Continue Learning

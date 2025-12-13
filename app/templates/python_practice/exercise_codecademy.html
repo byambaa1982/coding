@@ -47,7 +47,6 @@
         overflow-y: auto;
         display: flex;
         flex-direction: column;
-        position: relative;
     }
     
     /* Resizer handle */
@@ -164,7 +163,6 @@
         flex: 1;
         display: flex;
         flex-direction: column;
-        overflow-y: auto;
     }
     
     .exercise-header {
@@ -230,11 +228,11 @@
         background: white;
         border-radius: 8px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        flex: 1;
         display: flex;
         flex-direction: column;
         overflow: hidden;
         margin-bottom: 20px;
-        height: 400px;
     }
     
     .editor-header {
@@ -290,8 +288,7 @@
     
     #code-editor {
         flex: 1;
-        min-height: 250px;
-        max-height: 350px;
+        min-height: 300px;
     }
     
     /* Output and test results */
@@ -301,8 +298,6 @@
         padding: 20px;
         margin-bottom: 20px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        max-height: 400px;
-        overflow-y: auto;
     }
     
     .section-title {
@@ -320,7 +315,7 @@
         font-family: 'Courier New', monospace;
         font-size: 13px;
         white-space: pre-wrap;
-        max-height: 200px;
+        max-height: 300px;
         overflow-y: auto;
     }
     
@@ -895,14 +890,8 @@ function displayTestResults(testResults, passed, failed, status) {
     
     document.getElementById('test-results-section').style.display = 'block';
     
-    // Scroll to results with better visibility
-    setTimeout(() => {
-        const testSection = document.getElementById('test-results-section');
-        const exercisePanel = document.querySelector('.exercise-panel');
-        
-        // Scroll the exercise panel to show the test results
-        testSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
+    // Scroll to results
+    document.getElementById('test-results-section').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 // Utility function to escape HTML
