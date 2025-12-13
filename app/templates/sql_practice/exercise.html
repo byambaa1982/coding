@@ -8,11 +8,17 @@
         <!-- Breadcrumb -->
         <nav class="mb-6 text-sm">
             <ol class="flex items-center space-x-2 text-gray-600">
-                <li><a href="{{ url_for('account.my_courses') }}" class="hover:text-blue-600">My Courses</a></li>
+                <li><a href="{{ url_for('account.my_courses') }}" class="hover:text-green-600">My Courses</a></li>
                 <li><i class="fas fa-chevron-right text-xs"></i></li>
-                <li><a href="{{ url_for('learning.lesson', lesson_id=exercise.lesson_id) }}" class="hover:text-blue-600">Lesson</a></li>
+                {% if enrollment %}
+                <li><a href="{{ url_for('sql_practice.course_subtopics', enrollment_id=enrollment.id) }}" class="hover:text-green-600">{{ exercise.tutorial.title }}</a></li>
                 <li><i class="fas fa-chevron-right text-xs"></i></li>
-                <li class="text-gray-900 font-medium">Exercise</li>
+                {% if exercise.lesson %}
+                <li><a href="{{ url_for('sql_practice.lesson_exercises', lesson_id=exercise.lesson_id) }}" class="hover:text-green-600">{{ exercise.lesson.title }}</a></li>
+                <li><i class="fas fa-chevron-right text-xs"></i></li>
+                {% endif %}
+                {% endif %}
+                <li class="text-gray-900 font-medium">{{ exercise.title }}</li>
             </ol>
         </nav>
 
@@ -136,6 +142,32 @@
 
                 <!-- Feedback -->
                 <div id="feedback-container" class="hidden"></div>
+                
+                <!-- Navigation Buttons -->
+                {% if enrollment %}
+                <div class="flex justify-between items-center mt-6">
+                    {% if prev_exercise %}
+                    <a href="{{ url_for('sql_practice.exercise', exercise_id=prev_exercise.id) }}" 
+                       class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition">
+                        ← Previous Exercise
+                    </a>
+                    {% else %}
+                    <div></div>
+                    {% endif %}
+                    
+                    {% if next_exercise %}
+                    <a href="{{ url_for('sql_practice.exercise', exercise_id=next_exercise.id) }}" 
+                       class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition">
+                        Next Exercise →
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('sql_practice.course_subtopics', enrollment_id=enrollment.id) }}" 
+                       class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition">
+                        🎉 Back to Topics →
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>

@@ -11,6 +11,20 @@
 </div>
 
 <div class="container mx-auto px-4 py-8">
+    <!-- My Courses Button -->
+    {% if current_user.is_authenticated %}
+    <div class="mb-8">
+        <a href="{{ url_for('account.my_courses') }}" 
+           class="inline-flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+            <i class="fas fa-graduation-cap text-2xl"></i>
+            <div>
+                <div class="font-bold text-lg">My Courses</div>
+                <div class="text-sm text-indigo-100">Continue your learning journey</div>
+            </div>
+            <i class="fas fa-arrow-right ml-4"></i>
+        </a>
+    </div>
+    {% endif %}
     <!-- Search and Filters -->
     <div class="mb-8">
         <form action="{{ url_for('catalog.index') }}" method="get" class="flex gap-4 mb-6">

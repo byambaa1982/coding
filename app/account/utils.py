@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 def get_continue_learning_destination(user_id, enrollment_id):
     """
     Determine where user should continue learning.
-    Routes to subtopics page for Python courses.
+    Routes to subtopics page for both Python and SQL courses.
     
     Args:
         user_id: ID of the user
@@ -25,6 +25,7 @@ def get_continue_learning_destination(user_id, enrollment_id):
         dict with keys: 'type', 'id', 'url'
         Examples:
         - {'type': 'subtopics', 'url': '/python-practice/course/1/subtopics'}
+        - {'type': 'subtopics', 'url': '/sql-practice/course/1/subtopics'}
         - {'type': 'lesson', 'id': 5, 'url': '/learning/lesson/5'}
         - {'type': 'exercise', 'id': 12, 'url': '/practice/exercise/12'}
     """
@@ -42,15 +43,21 @@ def get_continue_learning_destination(user_id, enrollment_id):
         logger.error(f"Enrollment {enrollment_id} not found")
         return {'type': 'catalog', 'url': url_for('catalog.index')}
     
-    # 2. Check course type - route Python courses to subtopics page
+    # 2. Route Python and SQL courses to their respective subtopics pages
     if enrollment.tutorial.course_type == 'python':
         logger.info(f"Routing user {user_id} to Python course subtopics for enrollment {enrollment_id}")
         return {
             'type': 'subtopics',
             'url': url_for('python_practice.course_subtopics', enrollment_id=enrollment_id)
         }
+    elif enrollment.tutorial.course_type == 'sql':
+        logger.info(f"Routing user {user_id} to SQL course subtopics for enrollment {enrollment_id}")
+        return {
+            'type': 'subtopics',
+            'url': url_for('sql_practice.course_subtopics', enrollment_id=enrollment_id)
+        }
     
-    # 3. For SQL courses, keep the original logic
+    # 3. For other course types, keep the original logic
     # Determine current lesson
     current_lesson = None
     if enrollment.last_accessed_lesson_id:

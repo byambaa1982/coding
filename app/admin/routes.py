@@ -849,7 +849,7 @@ def order_refund(order_id):
 @admin_required
 def system_health():
     """System health monitoring dashboard."""
-    from app.models import TutorialOrder, ExerciseSubmission
+    from app.models import TutorialOrder, ExerciseSubmission, TutorialEnrollment
     import psutil
     import os
     
@@ -859,9 +859,7 @@ def system_health():
         'tutorials': NewTutorial.query.count(),
         'lessons': Lesson.query.count(),
         'exercises': Exercise.query.count(),
-        'enrollments': db.session.query(func.count()).select_from(
-            db.session.query(TutorialEnrollment).subquery()
-        ).scalar(),
+        'enrollments': TutorialEnrollment.query.count(),
         'orders': TutorialOrder.query.count(),
         'submissions': ExerciseSubmission.query.count()
     }
