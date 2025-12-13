@@ -148,6 +148,7 @@ class ExerciseForm(FlaskForm):
     solution_code = TextAreaField('Solution Code', validators=[Optional()])
     test_cases = TextAreaField('Test Cases (JSON format)', validators=[Optional()])
     hints = TextAreaField('Hints (JSON array)', validators=[Optional()])
+    expected_output = TextAreaField('Expected Output (JSON format)', validators=[Optional()])
     
     # SQL-specific fields
     database_schema = TextAreaField('Database Schema (DDL)', validators=[Optional()])
