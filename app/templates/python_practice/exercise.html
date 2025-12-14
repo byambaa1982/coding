@@ -3,6 +3,12 @@
 {% block title %}{{ exercise.title }} - Python Practice{% endblock %}
 
 {% block extra_css %}
+<!-- Highlight.js for Syntax Highlighting -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/sql.min.js"></script>
+
 <style>
     /* Reset body padding for full-screen layout */
     body {
@@ -117,36 +123,202 @@
         color: #1f2937;
         margin-top: 30px;
         margin-bottom: 15px;
+        font-weight: 600;
     }
     
-    .lesson-body h1 { font-size: 24px; }
-    .lesson-body h2 { font-size: 20px; }
-    .lesson-body h3 { font-size: 18px; }
+    .lesson-body h1 { 
+        font-size: 24px; 
+        border-bottom: 2px solid #e5e7eb;
+        padding-bottom: 10px;
+    }
+    .lesson-body h2 { 
+        font-size: 20px;
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 8px;
+    }
+    .lesson-body h3 { 
+        font-size: 18px; 
+    }
     
     .lesson-body p {
         margin-bottom: 20px;
+        line-height: 1.8;
     }
     
     .lesson-body pre {
-        background: #1f2937;
-        color: #f3f4f6;
+        background: #282c34;
+        color: #abb2bf;
         padding: 20px;
         border-radius: 8px;
         overflow-x: auto;
         margin: 20px 0;
-    }
-    
-    .lesson-body code {
-        background: #f3f4f6;
-        padding: 2px 6px;
-        border-radius: 3px;
-        font-family: 'Courier New', monospace;
-        font-size: 14px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        border: 1px solid #21252b;
+        position: relative;
     }
     
     .lesson-body pre code {
         background: transparent;
+        color: inherit;
         padding: 0;
+        border: none;
+        font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        font-size: 14px;
+        line-height: 1.6;
+        display: block;
+    }
+    
+    .lesson-body code {
+        background: #f3f4f6;
+        color: #e45649;
+        padding: 3px 7px;
+        border-radius: 4px;
+        font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        font-size: 13px;
+        border: 1px solid #e1e4e8;
+        font-weight: 500;
+    }
+    
+    /* Syntax highlighting overrides */
+    .lesson-body pre code.hljs {
+        padding: 0;
+        background: transparent;
+    }
+    
+    .lesson-body .hljs-keyword,
+    .lesson-body .hljs-selector-tag,
+    .lesson-body .hljs-literal,
+    .lesson-body .hljs-section,
+    .lesson-body .hljs-link {
+        color: #c678dd;
+    }
+    
+    .lesson-body .hljs-string,
+    .lesson-body .hljs-title,
+    .lesson-body .hljs-name,
+    .lesson-body .hljs-type,
+    .lesson-body .hljs-attribute,
+    .lesson-body .hljs-symbol,
+    .lesson-body .hljs-bullet,
+    .lesson-body .hljs-addition,
+    .lesson-body .hljs-variable,
+    .lesson-body .hljs-template-tag,
+    .lesson-body .hljs-template-variable {
+        color: #98c379;
+    }
+    
+    .lesson-body .hljs-comment,
+    .lesson-body .hljs-quote,
+    .lesson-body .hljs-deletion,
+    .lesson-body .hljs-meta {
+        color: #5c6370;
+        font-style: italic;
+    }
+    
+    .lesson-body .hljs-number,
+    .lesson-body .hljs-regexp,
+    .lesson-body .hljs-selector-id,
+    .lesson-body .hljs-selector-class {
+        color: #d19a66;
+    }
+    
+    .lesson-body .hljs-function .hljs-title,
+    .lesson-body .hljs-built_in,
+    .lesson-body .hljs-builtin-name {
+        color: #61afef;
+    }
+    
+    .lesson-body blockquote {
+        border-left: 4px solid #6366f1;
+        padding-left: 20px;
+        margin: 20px 0;
+        color: #6b7280;
+        font-style: italic;
+        background: #f9fafb;
+        padding: 15px 20px;
+        border-radius: 0 8px 8px 0;
+    }
+    
+    .lesson-body table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin: 20px 0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border-radius: 8px;
+        overflow: hidden;
+        border: 2px solid #e5e7eb;
+    }
+    
+    .lesson-body table th,
+    .lesson-body table td {
+        border: 1px solid #d1d5db;
+        padding: 14px 16px;
+        text-align: left;
+        font-size: 14px;
+    }
+    
+    .lesson-body table th {
+        background: linear-gradient(to bottom, #f9fafb, #f3f4f6);
+        font-weight: 700;
+        color: #111827;
+        border-bottom: 2px solid #6366f1;
+        text-transform: uppercase;
+        font-size: 12px;
+        letter-spacing: 0.5px;
+    }
+    
+    .lesson-body table tbody tr {
+        background: white;
+        transition: background 0.2s;
+    }
+    
+    .lesson-body table tbody tr:nth-child(even) {
+        background: #f9fafb;
+    }
+    
+    .lesson-body table tbody tr:hover {
+        background: #eff6ff;
+        box-shadow: inset 0 0 0 1px #6366f1;
+    }
+    
+    .lesson-body table td {
+        color: #374151;
+    }
+    
+    .lesson-body a {
+        color: #6366f1;
+        text-decoration: none;
+        border-bottom: 1px solid transparent;
+        transition: border-bottom 0.2s;
+    }
+    
+    .lesson-body a:hover {
+        border-bottom: 1px solid #6366f1;
+    }
+    
+    .lesson-body strong {
+        font-weight: 600;
+        color: #1f2937;
+    }
+    
+    .lesson-body em {
+        font-style: italic;
+        color: #4b5563;
+    }
+    
+    .lesson-body hr {
+        border: none;
+        border-top: 2px solid #e5e7eb;
+        margin: 30px 0;
+    }
+    
+    .lesson-body img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+        margin: 20px 0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     
     .lesson-body ul, .lesson-body ol {
@@ -578,7 +750,11 @@
             
             <!-- Lesson Body -->
             <div class="lesson-body">
-                {{ lesson_content.content|safe }}
+                {% if lesson_content_html %}
+                    {{ lesson_content_html }}
+                {% else %}
+                    {{ lesson_content.content|safe }}
+                {% endif %}
             </div>
             
             <!-- Video if available -->
@@ -957,5 +1133,25 @@ function escapeHtml(text) {
     div.textContent = String(text);
     return div.innerHTML;
 }
+
+// Initialize syntax highlighting for code blocks in lesson content
+document.addEventListener('DOMContentLoaded', function() {
+    // Apply syntax highlighting to all code blocks in lesson content
+    document.querySelectorAll('.lesson-body pre code').forEach((block) => {
+        // Try to detect language from class name or parent
+        if (!block.className || block.className === '') {
+            // Default to Python if no language specified
+            block.className = 'language-python';
+        }
+        hljs.highlightElement(block);
+    });
+    
+    // Also highlight any inline code that has language class
+    document.querySelectorAll('.lesson-body code[class*="language-"]').forEach((block) => {
+        if (block.parentElement.tagName !== 'PRE') {
+            hljs.highlightElement(block);
+        }
+    });
+});
 </script>
 {% endblock %}

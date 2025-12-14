@@ -15,6 +15,7 @@ from app.models import (
 from app.python_practice.executor import execute_python_code
 from app.python_practice.validators import validate_python_code, check_rate_limit
 from app.python_practice.forms import CodeSubmissionForm
+from app.utils.markdown_helper import render_markdown
 
 
 @python_practice_bp.route('/exercise/<int:exercise_id>')
@@ -105,8 +106,12 @@ def view_exercise(exercise_id):
     
     # Get lesson content for display alongside exercise
     lesson_content = None
+    lesson_content_html = None
     if exercise.lesson:
         lesson_content = exercise.lesson
+        # Render markdown content to HTML
+        if lesson_content.content:
+            lesson_content_html = render_markdown(lesson_content.content)
     
     return render_template('python_practice/exercise.html',
                          exercise=exercise,
@@ -124,6 +129,7 @@ def view_exercise(exercise_id):
                          subtopic_progress_percentage=subtopic_progress_percentage,
                          exercise_completion_map=exercise_completion_map,
                          lesson_content=lesson_content,
+                         lesson_content_html=lesson_content_html,
                          course_id=course_id or exercise.tutorial_id,
                          lesson_id_param=lesson_id or exercise.lesson_id)
 
