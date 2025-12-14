@@ -5,11 +5,12 @@ from sqlalchemy import func
 from werkzeug.utils import secure_filename
 from app.instructor import instructor_bp
 from app.instructor.decorators import instructor_required, can_edit_course
-from app.instructor.forms import CourseForm, LessonForm, ExerciseForm
-from app.models import NewTutorial, Lesson, Exercise, TutorialEnrollment, db
+from app.instructor.forms import CourseForm, LessonForm, ExerciseForm, QuizForm, QuizQuestionForm, TestCaseForm
+from app.models import NewTutorial, Lesson, Exercise, TutorialEnrollment, Quiz, QuizQuestion, db
 from datetime import datetime
 import re
 import os
+import json
 from PIL import Image
 
 
@@ -163,6 +164,7 @@ def course_detail(course_id):
     # Get lessons and exercises
     lessons = Lesson.query.filter_by(tutorial_id=course_id).order_by(Lesson.order_index).all()
     exercises = Exercise.query.filter_by(tutorial_id=course_id).order_by(Exercise.order_index).all()
+    quizzes = Quiz.query.filter_by(tutorial_id=course_id).order_by(Quiz.order_index).all()
     
     # Get enrollments count
     enrollments_count = TutorialEnrollment.query.filter_by(tutorial_id=course_id).count()
@@ -171,6 +173,7 @@ def course_detail(course_id):
                          course=course,
                          lessons=lessons,
                          exercises=exercises,
+                         quizzes=quizzes,
                          enrollments_count=enrollments_count)
 
 
@@ -544,3 +547,402 @@ def uploaded_file(filename):
     upload_folder = current_app.config.get('UPLOAD_FOLDER')
     return send_from_directory(upload_folder, filename)
 
+
+# Quiz routes
+@instructor_bp.route('/courses/<int:course_id>/quizzes/create', methods=['GET', 'POST'])
+@login_required
+@instructor_required
+def create_quiz(course_id):
+    """Create a new quiz."""
+    course = NewTutorial.query.get_or_404(course_id)
+    
+    if not can_edit_course(current_user, course):
+        abort(403)
+    
+    form = QuizForm()
+    
+    # Populate lesson choices
+    lessons = Lesson.query.filter_by(tutorial_id=course_id).order_by(Lesson.order_index).all()
+    form.lesson_id.choices = [(l.id, l.title) for l in lessons]
+    
+    if not lessons:
+        flash('You must create at least one lesson before adding a quiz.', 'warning')
+        return redirect(url_for('instructor.course_detail', course_id=course_id))
+    
+    if form.validate_on_submit():
+        # Create slug from title
+        slug = slugify(form.title.data)
+        
+        # Get next order_index
+        max_order = db.session.query(func.max(Quiz.order_index)).filter_by(
+            tutorial_id=course_id
+        ).scalar() or -1
+        
+        quiz = Quiz(
+            tutorial_id=course_id,
+            lesson_id=form.lesson_id.data,
+            title=form.title.data,
+            description=form.description.data,
+            passing_score=form.passing_score.data,
+            time_limit_minutes=form.time_limit_minutes.data if form.time_limit_minutes.data and form.time_limit_minutes.data > 0 else None,
+            max_attempts=form.max_attempts.data,
+            shuffle_questions=form.shuffle_questions.data,
+            shuffle_options=form.shuffle_options.data,
+            show_correct_answers=form.show_correct_answers.data,
+            is_required=form.is_required.data,
+            order_index=form.order_index.data if form.order_index.data is not None else max_order + 1
+        )
+        
+        db.session.add(quiz)
+        db.session.commit()
+        
+        flash(f'Quiz "{quiz.title}" created successfully! Now add questions.', 'success')
+        return redirect(url_for('instructor.edit_quiz', course_id=course_id, quiz_id=quiz.id))
+    
+    return render_template('instructor/quiz_form.html', form=form, course=course, mode='create')
+
+
+@instructor_bp.route('/courses/<int:course_id>/quizzes/<int:quiz_id>/edit', methods=['GET', 'POST'])
+@login_required
+@instructor_required
+def edit_quiz(course_id, quiz_id):
+    """Edit a quiz."""
+    course = NewTutorial.query.get_or_404(course_id)
+    quiz = Quiz.query.get_or_404(quiz_id)
+    
+    if not can_edit_course(current_user, course):
+        abort(403)
+    
+    if quiz.tutorial_id != course_id:
+        abort(404)
+    
+    form = QuizForm(obj=quiz)
+    
+    # Populate lesson choices
+    lessons = Lesson.query.filter_by(tutorial_id=course_id).order_by(Lesson.order_index).all()
+    form.lesson_id.choices = [(l.id, l.title) for l in lessons]
+    
+    # Get quiz questions
+    questions = QuizQuestion.query.filter_by(quiz_id=quiz_id).order_by(QuizQuestion.order_index).all()
+    
+    if request.method == 'GET':
+        form.lesson_id.data = quiz.lesson_id
+        form.time_limit_minutes.data = quiz.time_limit_minutes or 0
+    
+    if form.validate_on_submit():
+        quiz.title = form.title.data
+        quiz.lesson_id = form.lesson_id.data
+        quiz.description = form.description.data
+        quiz.passing_score = form.passing_score.data
+        quiz.time_limit_minutes = form.time_limit_minutes.data if form.time_limit_minutes.data and form.time_limit_minutes.data > 0 else None
+        quiz.max_attempts = form.max_attempts.data
+        quiz.shuffle_questions = form.shuffle_questions.data
+        quiz.shuffle_options = form.shuffle_options.data
+        quiz.show_correct_answers = form.show_correct_answers.data
+        quiz.is_required = form.is_required.data
+        quiz.order_index = form.order_index.data
+        
+        db.session.commit()
+        
+        flash('Quiz updated successfully!', 'success')
+        return redirect(url_for('instructor.edit_quiz', course_id=course_id, quiz_id=quiz_id))
+    
+    return render_template('instructor/quiz_form.html', form=form, course=course, quiz=quiz, 
+                         questions=questions, mode='edit')
+
+
+@instructor_bp.route('/courses/<int:course_id>/quizzes/<int:quiz_id>/delete', methods=['POST'])
+@login_required
+@instructor_required
+def delete_quiz(course_id, quiz_id):
+    """Delete a quiz."""
+    course = NewTutorial.query.get_or_404(course_id)
+    quiz = Quiz.query.get_or_404(quiz_id)
+    
+    if not can_edit_course(current_user, course):
+        abort(403)
+    
+    if quiz.tutorial_id != course_id:
+        abort(404)
+    
+    db.session.delete(quiz)
+    db.session.commit()
+    
+    flash('Quiz deleted successfully.', 'success')
+    return redirect(url_for('instructor.course_detail', course_id=course_id))
+
+
+# Quiz Question routes
+@instructor_bp.route('/courses/<int:course_id>/quizzes/<int:quiz_id>/questions/create', methods=['GET', 'POST'])
+@login_required
+@instructor_required
+def create_quiz_question(course_id, quiz_id):
+    """Create a new quiz question."""
+    course = NewTutorial.query.get_or_404(course_id)
+    quiz = Quiz.query.get_or_404(quiz_id)
+    
+    if not can_edit_course(current_user, course):
+        abort(403)
+    
+    if quiz.tutorial_id != course_id:
+        abort(404)
+    
+    form = QuizQuestionForm()
+    
+    if form.validate_on_submit():
+        # Get next order_index
+        max_order = db.session.query(func.max(QuizQuestion.order_index)).filter_by(
+            quiz_id=quiz_id
+        ).scalar() or -1
+        
+        # Prepare options JSON for multiple choice
+        options = None
+        if form.question_type.data == 'multiple_choice':
+            options_list = []
+            if form.option_a.data:
+                options_list.append({'id': 'a', 'text': form.option_a.data})
+            if form.option_b.data:
+                options_list.append({'id': 'b', 'text': form.option_b.data})
+            if form.option_c.data:
+                options_list.append({'id': 'c', 'text': form.option_c.data})
+            if form.option_d.data:
+                options_list.append({'id': 'd', 'text': form.option_d.data})
+            options = json.dumps(options_list)
+        
+        question = QuizQuestion(
+            quiz_id=quiz_id,
+            question_text=form.question_text.data,
+            question_type=form.question_type.data,
+            options=options,
+            correct_answer=form.correct_answer.data,
+            explanation=form.explanation.data,
+            points=form.points.data,
+            order_index=form.order_index.data if form.order_index.data is not None else max_order + 1
+        )
+        
+        db.session.add(question)
+        db.session.commit()
+        
+        flash('Question added successfully!', 'success')
+        return redirect(url_for('instructor.edit_quiz', course_id=course_id, quiz_id=quiz_id))
+    
+    return render_template('instructor/quiz_question_form.html', form=form, course=course, 
+                         quiz=quiz, mode='create')
+
+
+@instructor_bp.route('/courses/<int:course_id>/quizzes/<int:quiz_id>/questions/<int:question_id>/edit', methods=['GET', 'POST'])
+@login_required
+@instructor_required
+def edit_quiz_question(course_id, quiz_id, question_id):
+    """Edit a quiz question."""
+    course = NewTutorial.query.get_or_404(course_id)
+    quiz = Quiz.query.get_or_404(quiz_id)
+    question = QuizQuestion.query.get_or_404(question_id)
+    
+    if not can_edit_course(current_user, course):
+        abort(403)
+    
+    if quiz.tutorial_id != course_id or question.quiz_id != quiz_id:
+        abort(404)
+    
+    form = QuizQuestionForm(obj=question)
+    
+    if request.method == 'GET':
+        # Pre-populate multiple choice options
+        if question.options:
+            try:
+                options_list = json.loads(question.options)
+                for option in options_list:
+                    opt_id = option.get('id', '').lower()
+                    opt_text = option.get('text', '')
+                    if opt_id == 'a':
+                        form.option_a.data = opt_text
+                    elif opt_id == 'b':
+                        form.option_b.data = opt_text
+                    elif opt_id == 'c':
+                        form.option_c.data = opt_text
+                    elif opt_id == 'd':
+                        form.option_d.data = opt_text
+            except json.JSONDecodeError:
+                pass
+    
+    if form.validate_on_submit():
+        question.question_text = form.question_text.data
+        question.question_type = form.question_type.data
+        
+        # Update options JSON for multiple choice
+        if form.question_type.data == 'multiple_choice':
+            options_list = []
+            if form.option_a.data:
+                options_list.append({'id': 'a', 'text': form.option_a.data})
+            if form.option_b.data:
+                options_list.append({'id': 'b', 'text': form.option_b.data})
+            if form.option_c.data:
+                options_list.append({'id': 'c', 'text': form.option_c.data})
+            if form.option_d.data:
+                options_list.append({'id': 'd', 'text': form.option_d.data})
+            question.options = json.dumps(options_list)
+        else:
+            question.options = None
+        
+        question.correct_answer = form.correct_answer.data
+        question.explanation = form.explanation.data
+        question.points = form.points.data
+        question.order_index = form.order_index.data
+        
+        db.session.commit()
+        
+        flash('Question updated successfully!', 'success')
+        return redirect(url_for('instructor.edit_quiz', course_id=course_id, quiz_id=quiz_id))
+    
+    return render_template('instructor/quiz_question_form.html', form=form, course=course, 
+                         quiz=quiz, question=question, mode='edit')
+
+
+@instructor_bp.route('/courses/<int:course_id>/quizzes/<int:quiz_id>/questions/<int:question_id>/delete', methods=['POST'])
+@login_required
+@instructor_required
+def delete_quiz_question(course_id, quiz_id, question_id):
+    """Delete a quiz question."""
+    course = NewTutorial.query.get_or_404(course_id)
+    quiz = Quiz.query.get_or_404(quiz_id)
+    question = QuizQuestion.query.get_or_404(question_id)
+    
+    if not can_edit_course(current_user, course):
+        abort(403)
+    
+    if quiz.tutorial_id != course_id or question.quiz_id != quiz_id:
+        abort(404)
+    
+    db.session.delete(question)
+    db.session.commit()
+    
+    flash('Question deleted successfully.', 'success')
+    return redirect(url_for('instructor.edit_quiz', course_id=course_id, quiz_id=quiz_id))
+
+
+# Test Case Management API endpoints
+@instructor_bp.route('/api/exercises/<int:exercise_id>/test-cases', methods=['GET'])
+@login_required
+@instructor_required
+def get_test_cases(exercise_id):
+    """Get test cases for an exercise (API endpoint)."""
+    exercise = Exercise.query.get_or_404(exercise_id)
+    
+    # Check permissions
+    if not can_edit_course(current_user, exercise.tutorial):
+        return jsonify({'error': 'Permission denied'}), 403
+    
+    try:
+        test_cases = json.loads(exercise.test_cases) if exercise.test_cases else []
+        return jsonify({'success': True, 'test_cases': test_cases})
+    except json.JSONDecodeError:
+        return jsonify({'success': False, 'error': 'Invalid test cases format'}), 400
+
+
+@instructor_bp.route('/api/exercises/<int:exercise_id>/test-cases', methods=['POST'])
+@login_required
+@instructor_required
+def add_test_case(exercise_id):
+    """Add a test case to an exercise (API endpoint)."""
+    exercise = Exercise.query.get_or_404(exercise_id)
+    
+    # Check permissions
+    if not can_edit_course(current_user, exercise.tutorial):
+        return jsonify({'error': 'Permission denied'}), 403
+    
+    data = request.get_json()
+    
+    if not data or not all(k in data for k in ['description', 'input', 'expected_output']):
+        return jsonify({'error': 'Missing required fields'}), 400
+    
+    try:
+        # Load existing test cases
+        test_cases = json.loads(exercise.test_cases) if exercise.test_cases else []
+        
+        # Add new test case
+        new_test_case = {
+            'id': len(test_cases) + 1,
+            'description': data['description'],
+            'input': data['input'],
+            'expected_output': data['expected_output'],
+            'is_hidden': data.get('is_hidden', False),
+            'points': data.get('points', 1)
+        }
+        
+        test_cases.append(new_test_case)
+        
+        # Save back to exercise
+        exercise.test_cases = json.dumps(test_cases)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'test_case': new_test_case})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@instructor_bp.route('/api/exercises/<int:exercise_id>/test-cases/<int:test_case_id>', methods=['DELETE'])
+@login_required
+@instructor_required
+def delete_test_case(exercise_id, test_case_id):
+    """Delete a test case from an exercise (API endpoint)."""
+    exercise = Exercise.query.get_or_404(exercise_id)
+    
+    # Check permissions
+    if not can_edit_course(current_user, exercise.tutorial):
+        return jsonify({'error': 'Permission denied'}), 403
+    
+    try:
+        # Load existing test cases
+        test_cases = json.loads(exercise.test_cases) if exercise.test_cases else []
+        
+        # Remove test case by id
+        test_cases = [tc for tc in test_cases if tc.get('id') != test_case_id]
+        
+        # Re-index
+        for idx, tc in enumerate(test_cases):
+            tc['id'] = idx + 1
+        
+        # Save back to exercise
+        exercise.test_cases = json.dumps(test_cases)
+        db.session.commit()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@instructor_bp.route('/api/exercises/<int:exercise_id>/test-cases/<int:test_case_id>', methods=['PUT'])
+@login_required
+@instructor_required
+def update_test_case(exercise_id, test_case_id):
+    """Update a test case in an exercise (API endpoint)."""
+    exercise = Exercise.query.get_or_404(exercise_id)
+    
+    # Check permissions
+    if not can_edit_course(current_user, exercise.tutorial):
+        return jsonify({'error': 'Permission denied'}), 403
+    
+    data = request.get_json()
+    
+    try:
+        # Load existing test cases
+        test_cases = json.loads(exercise.test_cases) if exercise.test_cases else []
+        
+        # Find and update test case
+        for tc in test_cases:
+            if tc.get('id') == test_case_id:
+                tc['description'] = data.get('description', tc.get('description'))
+                tc['input'] = data.get('input', tc.get('input'))
+                tc['expected_output'] = data.get('expected_output', tc.get('expected_output'))
+                tc['is_hidden'] = data.get('is_hidden', tc.get('is_hidden', False))
+                tc['points'] = data.get('points', tc.get('points', 1))
+                break
+        
+        # Save back to exercise
+        exercise.test_cases = json.dumps(test_cases)
+        db.session.commit()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

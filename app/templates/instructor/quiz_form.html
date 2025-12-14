@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Create Quiz' if mode == 'create' else 'Edit Quiz' }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-900">{{ 'Create New Quiz' if mode == 'create' else 'Edit Quiz' }}</h2>
+                <p class="text-gray-600 text-sm mt-1">Course: {{ course.title }}</p>
+            </div>
+            <div class="p-6">
+                <form method="POST" action="" class="space-y-6">
+                    {{ form.hidden_tag() }}
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.title.label.text }}</label>
+                        {{ form.title(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500") }}
+                        {% if form.title.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.title.errors[0] }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.description.label.text }}</label>
+                        {{ form.description(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500", rows="3") }}
+                        <p class="mt-1 text-sm text-gray-500">Instructions for the quiz (optional)</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.lesson_id.label.text }}</label>
+                        {{ form.lesson_id(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500") }}
+                        {% if form.lesson_id.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.lesson_id.errors[0] }}</p>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">Select the lesson this quiz is associated with</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.passing_score.label.text }}</label>
+                            {{ form.passing_score(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500") }}
+                            <p class="mt-1 text-sm text-gray-500">Percentage required to pass</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.time_limit_minutes.label.text }}</label>
+                            {{ form.time_limit_minutes(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500") }}
+                            <p class="mt-1 text-sm text-gray-500">0 = no time limit</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.max_attempts.label.text }}</label>
+                            {{ form.max_attempts(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500") }}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.order_index.label.text }}</label>
+                        {{ form.order_index(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500") }}
+                        <p class="mt-1 text-sm text-gray-500">Position in the course (0-based)</p>
+                    </div>
+
+                    <div class="space-y-3">
+                        <h3 class="text-lg font-semibold text-gray-900">Quiz Settings</h3>
+                        
+                        <div class="flex items-center">
+                            {{ form.shuffle_questions(class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded") }}
+                            <label class="ml-2 block text-sm text-gray-900">{{ form.shuffle_questions.label.text }}</label>
+                        </div>
+
+                        <div class="flex items-center">
+                            {{ form.shuffle_options(class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded") }}
+                            <label class="ml-2 block text-sm text-gray-900">{{ form.shuffle_options.label.text }}</label>
+                        </div>
+
+                        <div class="flex items-center">
+                            {{ form.show_correct_answers(class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded") }}
+                            <label class="ml-2 block text-sm text-gray-900">{{ form.show_correct_answers.label.text }}</label>
+                        </div>
+
+                        <div class="flex items-center">
+                            {{ form.is_required(class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded") }}
+                            <label class="ml-2 block text-sm text-gray-900">{{ form.is_required.label.text }}</label>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 pt-4 border-t">
+                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                            <i class="fas fa-save mr-2"></i>{{ 'Create Quiz' if mode == 'create' else 'Save Changes' }}
+                        </button>
+                        <a href="{{ url_for('instructor.course_detail', course_id=course.id) }}" class="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if mode == 'edit' and quiz %}
+        <!-- Quiz Questions Section -->
+        <div class="mt-8 bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="text-xl font-bold text-gray-900">Questions ({{ questions|length }})</h2>
+                <a href="{{ url_for('instructor.create_quiz_question', course_id=course.id, quiz_id=quiz.id) }}" 
+                   class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                    <i class="fas fa-plus mr-2"></i> Add Question
+                </a>
+            </div>
+            <div class="p-6">
+                {% if questions %}
+                    <div class="space-y-4">
+                        {% for question in questions %}
+                        <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <span class="px-2 py-1 text-xs font-semibold rounded bg-gray-100 text-gray-800">Q{{ question.order_index + 1 }}</span>
+                                        <span class="px-2 py-1 text-xs rounded bg-blue-100 text-blue-800">{{ question.question_type.replace('_', ' ').title() }}</span>
+                                        <span class="text-xs text-gray-600">{{ question.points }} points</span>
+                                    </div>
+                                    <p class="text-gray-900 mb-2">{{ question.question_text }}</p>
+                                    {% if question.options %}
+                                        {% set options = question.options|from_json %}
+                                        <div class="ml-4 space-y-1">
+                                            {% for option in options %}
+                                            <div class="text-sm text-gray-600">
+                                                <span class="font-semibold">{{ option.id|upper }}.</span> {{ option.text }}
+                                                {% if option.id == question.correct_answer %}
+                                                    <span class="text-green-600">✓</span>
+                                                {% endif %}
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <div class="ml-4 text-sm text-green-600">
+                                            <strong>Answer:</strong> {{ question.correct_answer }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="flex gap-2 ml-4">
+                                    <a href="{{ url_for('instructor.edit_quiz_question', course_id=course.id, quiz_id=quiz.id, question_id=question.id) }}" 
+                                       class="text-blue-600 hover:text-blue-900">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form method="POST" action="{{ url_for('instructor.delete_quiz_question', course_id=course.id, quiz_id=quiz.id, question_id=question.id) }}" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                                        <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Delete this question?')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-12">
+                        <p class="text-gray-600 mb-4">No questions yet. Add questions to complete this quiz.</p>
+                        <a href="{{ url_for('instructor.create_quiz_question', course_id=course.id, quiz_id=quiz.id) }}" 
+                           class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                            Add First Question
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Add from_json filter for Jinja2 in JavaScript context
+// This is handled by Jinja2 template filter
+</script>
+{% endblock %}

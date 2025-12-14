@@ -30,6 +30,9 @@
         <a href="{{ url_for('instructor.create_exercise', course_id=course.id) }}" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
             <i class="fas fa-code mr-2"></i> Add Exercise
         </a>
+        <a href="{{ url_for('instructor.create_quiz', course_id=course.id) }}" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+            <i class="fas fa-question-circle mr-2"></i> Add Quiz
+        </a>
         
         {% if course.status == 'draft' %}
             <form method="POST" action="{{ url_for('instructor.publish_course', course_id=course.id) }}" style="display: inline;">
@@ -58,7 +61,7 @@
     </div>
 
     <!-- Course Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
         <div class="bg-white rounded-lg shadow p-6 text-center">
             <h3 class="text-3xl font-bold text-gray-900">{{ lessons|length }}</h3>
             <p class="text-gray-600 mt-1">Lessons</p>
@@ -66,6 +69,10 @@
         <div class="bg-white rounded-lg shadow p-6 text-center">
             <h3 class="text-3xl font-bold text-gray-900">{{ exercises|length }}</h3>
             <p class="text-gray-600 mt-1">Exercises</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6 text-center">
+            <h3 class="text-3xl font-bold text-gray-900">{{ quizzes|length }}</h3>
+            <p class="text-gray-600 mt-1">Quizzes</p>
         </div>
         <div class="bg-white rounded-lg shadow p-6 text-center">
             <h3 class="text-3xl font-bold text-gray-900">{{ enrollments_count }}</h3>
@@ -148,7 +155,7 @@
     </div>
 
     <!-- Exercises Section -->
-    <div class="bg-white rounded-lg shadow">
+    <div class="mb-8 bg-white rounded-lg shadow">
         <div class="px-6 py-4 border-b border-gray-200">
             <h2 class="text-xl font-bold text-gray-900">Exercises ({{ exercises|length }})</h2>
         </div>
@@ -206,6 +213,69 @@
                     <p class="text-gray-600 mb-4">No exercises yet.</p>
                     <a href="{{ url_for('instructor.create_exercise', course_id=course.id) }}" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
                         Add First Exercise
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quizzes Section -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-bold text-gray-900">Quizzes ({{ quizzes|length }})</h2>
+        </div>
+        <div class="p-6">
+            {% if quizzes %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lesson</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Questions</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Passing Score</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Required</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for quiz in quizzes %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ quiz.order_index + 1 }}</td>
+                                <td class="px-6 py-4 font-medium text-gray-900">{{ quiz.title }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-600">{{ quiz.lesson.title if quiz.lesson else '-' }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ quiz.questions.count() }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ quiz.passing_score }}%</td>
+                                <td class="px-6 py-4">
+                                    {% if quiz.is_required %}
+                                        <span class="px-2 py-1 text-xs rounded bg-red-100 text-red-800">Required</span>
+                                    {% else %}
+                                        <span class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-800">Optional</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 text-sm space-x-2">
+                                    <a href="{{ url_for('instructor.edit_quiz', course_id=course.id, quiz_id=quiz.id) }}" 
+                                       class="text-blue-600 hover:text-blue-900">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form method="POST" action="{{ url_for('instructor.delete_quiz', course_id=course.id, quiz_id=quiz.id) }}" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                                        <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Delete quiz?')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-12">
+                    <p class="text-gray-600 mb-4">No quizzes yet.</p>
+                    <a href="{{ url_for('instructor.create_quiz', course_id=course.id) }}" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                        Add First Quiz
                     </a>
                 </div>
             {% endif %}
