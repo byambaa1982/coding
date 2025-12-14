@@ -11,42 +11,79 @@
                 <p class="text-gray-600 text-sm mt-1">Course: {{ course.title }}</p>
             </div>
             <div class="p-6">
+                <!-- Display Form Errors -->
+                {% if form.errors %}
+                <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <h3 class="text-sm font-semibold text-red-800 mb-2">Please fix the following errors:</h3>
+                    <ul class="list-disc list-inside text-sm text-red-700">
+                        {% for field, errors in form.errors.items() %}
+                            {% for error in errors %}
+                                <li>{{ field }}: {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                
                 <form method="POST" action="" class="space-y-6">
                     {{ form.hidden_tag() }}
                     
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.title.label.text }}</label>
                         {{ form.title(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500") }}
+                        {% if form.title.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.title.errors[0] }}</p>
+                        {% endif %}
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.description.label.text }}</label>
                         {{ form.description(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500", rows="4") }}
-                        <p class="mt-1 text-sm text-gray-500">Instructions for students</p>
+                        {% if form.description.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.description.errors[0] }}</p>
+                        {% else %}
+                            <p class="mt-1 text-sm text-gray-500">Instructions for students</p>
+                        {% endif %}
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.lesson_id.label.text }}</label>
                         {{ form.lesson_id(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500") }}
-                        <p class="mt-1 text-sm text-gray-500">Link this exercise to a specific lesson (optional)</p>
+                        {% if form.lesson_id.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.lesson_id.errors[0] }}</p>
+                        {% else %}
+                            <p class="mt-1 text-sm text-gray-500">Link this exercise to a specific lesson (optional)</p>
+                        {% endif %}
                     </div>
 
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.exercise_type.label.text }}</label>
                             {{ form.exercise_type(id="exercise_type", class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500") }}
+                            {% if form.exercise_type.errors %}
+                                <p class="mt-1 text-xs text-red-600">{{ form.exercise_type.errors[0] }}</p>
+                            {% endif %}
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.difficulty.label.text }}</label>
                             {{ form.difficulty(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500") }}
+                            {% if form.difficulty.errors %}
+                                <p class="mt-1 text-xs text-red-600">{{ form.difficulty.errors[0] }}</p>
+                            {% endif %}
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.points.label.text }}</label>
                             {{ form.points(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500") }}
+                            {% if form.points.errors %}
+                                <p class="mt-1 text-xs text-red-600">{{ form.points.errors[0] }}</p>
+                            {% endif %}
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.order_index.label.text }}</label>
                             {{ form.order_index(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500") }}
+                            {% if form.order_index.errors %}
+                                <p class="mt-1 text-xs text-red-600">{{ form.order_index.errors[0] }}</p>
+                            {% endif %}
                         </div>
                     </div>
 

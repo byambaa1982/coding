@@ -13,7 +13,8 @@ from app.sql_practice.forms import SQLQueryForm, SQLExerciseSubmissionForm
 from app.sql_practice.executor import SQLExecutor
 from app.sql_practice.validators import SQLValidator
 from app.models import Exercise, ExerciseSubmission, TutorialEnrollment, NewTutorial, Lesson
-from app.extensions import db
+from app.extensions import db, csrf
+from app.utils.hybrid_validator import get_validator
 
 logger = logging.getLogger(__name__)
 
@@ -517,3 +518,90 @@ def lesson_exercises(lesson_id):
     return redirect(url_for('sql_practice.course_subtopics', 
                           course_id=course_id, 
                           lesson_id=lesson_id))
+
+
+@sql_practice_bp.route('/exercise/<int:exercise_id>/hint', methods=['POST'])
+@login_required
+@csrf.exempt
+def get_sql_hint(exercise_id):
+    """Get AI-generated hint for SQL exercise."""
+    exercise = Exercise.query.get_or_404(exercise_id)
+    
+    # Get submitted query and context
+    data = request.get_json()
+    if not data or 'code' not in data:
+        return jsonify({'error': 'No SQL query provided'}), 400
+    
+    query = data.get('code', '')
+    error_message = data.get('error_message')
+    failed_tests = data.get('failed_tests', [])
+    
+    # Get validator instance
+    validator = get_validator()
+    
+    if not validator.ai_enabled:
+        return jsonify({
+            'success': False,
+            'hint': 'AI hints are not available. Please check the exercise requirements or ask your instructor for help.',
+            'reason': 'OpenAI API not configured'
+        })
+    
+    # Generate hint
+    hint_result = validator.get_ai_hint(
+        code=query,
+        language='sql',
+        exercise_description=exercise.description or exercise.title,
+        error_message=error_message,
+        failed_tests=failed_tests
+    )
+    
+    return jsonify(hint_result)
+
+
+@sql_practice_bp.route('/exercise/<int:exercise_id>/review', methods=['POST'])
+@login_required
+@csrf.exempt
+def get_sql_review(exercise_id):
+    """Get AI code review for SQL query after passing tests."""
+    exercise = Exercise.query.get_or_404(exercise_id)
+    
+    # Check if user has passed this exercise
+    has_passed = ExerciseSubmission.query.filter_by(
+        user_id=current_user.id,
+        exercise_id=exercise_id,
+        status='passed'
+    ).first() is not None
+    
+    if not has_passed:
+        return jsonify({
+            'success': False,
+            'feedback': 'Complete the exercise first to get a code review.',
+            'suggestions': []
+        }), 400
+    
+    # Get submitted query
+    data = request.get_json()
+    if not data or 'code' not in data:
+        return jsonify({'error': 'No SQL query provided'}), 400
+    
+    query = data.get('code', '')
+    
+    # Get validator instance
+    validator = get_validator()
+    
+    if not validator.ai_enabled:
+        return jsonify({
+            'success': True,
+            'feedback': 'Congratulations on completing this SQL exercise!',
+            'suggestions': [],
+            'reason': 'OpenAI API not configured'
+        })
+    
+    # Generate code review
+    review_result = validator.get_code_review(
+        code=query,
+        language='sql',
+        exercise_description=exercise.description or exercise.title
+    )
+    
+    return jsonify(review_result)

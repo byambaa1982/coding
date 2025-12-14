@@ -16,6 +16,8 @@ from app.python_practice.executor import execute_python_code
 from app.python_practice.validators import validate_python_code, check_rate_limit
 from app.python_practice.forms import CodeSubmissionForm
 from app.utils.markdown_helper import render_markdown
+from app.utils.hybrid_validator import get_validator
+from app.extensions import csrf
 
 
 @python_practice_bp.route('/exercise/<int:exercise_id>')
@@ -51,6 +53,11 @@ def view_exercise(exercise_id):
         user_id=current_user.id,
         exercise_id=exercise_id
     ).order_by(ExerciseSubmission.submitted_at.desc()).limit(10).all()
+    
+    # Get the last submission code to pre-fill the editor
+    last_submission_code = None
+    if previous_submissions:
+        last_submission_code = previous_submissions[0].submitted_code
     
     # Parse hints from JSON
     hints = []
@@ -120,6 +127,7 @@ def view_exercise(exercise_id):
                          hints=hints,
                          has_solved=has_solved,
                          starter_code=exercise.starter_code or '# Write your code here\n',
+                         last_submission_code=last_submission_code,
                          lesson_exercises=lesson_exercises,
                          current_exercise_index=current_exercise_index,
                          next_exercise=next_exercise,
@@ -190,9 +198,15 @@ def submit_code(exercise_id):
     test_cases = []
     if exercise.test_cases:
         try:
+            # First try parsing as JSON
             test_cases = json.loads(exercise.test_cases)
         except json.JSONDecodeError:
-            test_cases = []
+            # If JSON parsing fails, try Python literal eval (for backwards compatibility)
+            try:
+                import ast
+                test_cases = ast.literal_eval(exercise.test_cases)
+            except (ValueError, SyntaxError):
+                test_cases = []
     
     # Execute code with test cases
     execution_result = execute_python_code(
@@ -465,3 +479,90 @@ def lesson_exercises(lesson_id):
     return redirect(url_for('python_practice.course_subtopics', 
                           course_id=course_id, 
                           lesson_id=lesson_id))
+
+
+@python_practice_bp.route('/exercise/<int:exercise_id>/hint', methods=['POST'])
+@login_required
+@csrf.exempt
+def get_ai_hint(exercise_id):
+    """Get AI-generated hint for struggling student."""
+    exercise = Exercise.query.get_or_404(exercise_id)
+    
+    # Get submitted code and context
+    data = request.get_json()
+    if not data or 'code' not in data:
+        return jsonify({'error': 'No code provided'}), 400
+    
+    code = data.get('code', '')
+    error_message = data.get('error_message')
+    failed_tests = data.get('failed_tests', [])
+    
+    # Get validator instance
+    validator = get_validator()
+    
+    if not validator.ai_enabled:
+        return jsonify({
+            'success': False,
+            'hint': 'AI hints are not available. Please check the exercise requirements or ask your instructor for help.',
+            'reason': 'OpenAI API not configured'
+        })
+    
+    # Generate hint
+    hint_result = validator.get_ai_hint(
+        code=code,
+        language='python',
+        exercise_description=exercise.description or exercise.title,
+        error_message=error_message,
+        failed_tests=failed_tests
+    )
+    
+    return jsonify(hint_result)
+
+
+@python_practice_bp.route('/exercise/<int:exercise_id>/review', methods=['POST'])
+@login_required
+@csrf.exempt
+def get_code_review(exercise_id):
+    """Get AI code review after passing tests."""
+    exercise = Exercise.query.get_or_404(exercise_id)
+    
+    # Check if user has passed this exercise
+    has_passed = ExerciseSubmission.query.filter_by(
+        user_id=current_user.id,
+        exercise_id=exercise_id,
+        status='passed'
+    ).first() is not None
+    
+    if not has_passed:
+        return jsonify({
+            'success': False,
+            'feedback': 'Complete the exercise first to get a code review.',
+            'suggestions': []
+        }), 400
+    
+    # Get submitted code
+    data = request.get_json()
+    if not data or 'code' not in data:
+        return jsonify({'error': 'No code provided'}), 400
+    
+    code = data.get('code', '')
+    
+    # Get validator instance
+    validator = get_validator()
+    
+    if not validator.ai_enabled:
+        return jsonify({
+            'success': True,
+            'feedback': 'Congratulations on completing this exercise!',
+            'suggestions': [],
+            'reason': 'OpenAI API not configured'
+        })
+    
+    # Generate code review
+    review_result = validator.get_code_review(
+        code=code,
+        language='python',
+        exercise_description=exercise.description or exercise.title
+    )
+    
+    return jsonify(review_result)

@@ -399,14 +399,15 @@
     
     /* Code editor section */
     .code-editor-section {
-        background: white;
+        background: #1e1e1e;
         border-radius: 8px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         display: flex;
         flex-direction: column;
         overflow: hidden;
         margin-bottom: 20px;
-        height: 400px;
+        min-height: 350px;
+        max-height: 450px;
     }
     
     .editor-header {
@@ -416,11 +417,18 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        flex-shrink: 0;
     }
     
     .editor-title {
         font-weight: 600;
         font-size: 14px;
+    }
+    
+    .editor-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
     }
     
     .run-button {
@@ -446,6 +454,101 @@
         cursor: not-allowed;
     }
     
+    .hint-button {
+        background: #f59e0b;
+        color: white;
+        border: none;
+        padding: 8px 20px;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+    }
+    
+    .hint-button:hover {
+        background: #d97706;
+    }
+    
+    .hint-button:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+    }
+    
+    .review-button {
+        background: #8b5cf6;
+        color: white;
+        border: none;
+        padding: 8px 20px;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+    }
+    
+    .review-button:hover {
+        background: #7c3aed;
+    }
+    
+    .review-button:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+    }
+    
+    .ai-feedback-box {
+        background: #fef3c7;
+        border-left: 4px solid #f59e0b;
+        padding: 15px 20px;
+        margin: 15px 0;
+        border-radius: 6px;
+    }
+    
+    .ai-feedback-box.review {
+        background: #ede9fe;
+        border-left-color: #8b5cf6;
+    }
+    
+    .ai-feedback-box h4 {
+        margin: 0 0 10px 0;
+        color: #92400e;
+        font-size: 16px;
+    }
+    
+    .ai-feedback-box.review h4 {
+        color: #5b21b6;
+    }
+    
+    .ai-feedback-box p {
+        margin: 8px 0;
+        line-height: 1.6;
+    }
+    
+    .ai-feedback-box .encouragement {
+        font-style: italic;
+        color: #78350f;
+        margin-top: 12px;
+    }
+    
+    .ai-feedback-box.review .encouragement {
+        color: #5b21b6;
+    }
+    
+    .ai-feedback-list {
+        margin: 10px 0;
+        padding-left: 20px;
+    }
+    
+    .ai-feedback-list li {
+        margin: 6px 0;
+    }
+    
     .loading-spinner {
         display: inline-block;
         width: 14px;
@@ -461,9 +564,13 @@
     }
     
     #code-editor {
-        flex: 1;
+        flex: 1 1 auto;
         min-height: 250px;
-        max-height: 350px;
+        height: 100%;
+        overflow: hidden;
+        padding: 0;
+        margin: 0;
+        background: #1e1e1e;
     }
     
     /* Output and test results */
@@ -822,13 +929,18 @@
                         <i class="fas fa-check"></i> Solved
                     </span>
                     {% endif %}
-                    {% if lesson_exercises %}
-                    <span style="color: #6b7280; font-size: 13px;">
-                        Exercise {{ current_exercise_index + 1 }}/{{ total_exercises_in_lesson }}
-                    </span>
-                    {% endif %}
                 </div>
-                <div class="exercise-description">
+                {% if lesson_exercises %}
+                <div style="margin-top: 12px; padding: 10px; background: #f3f4f6; border-radius: 6px; display: flex; align-items: center; justify-content: space-between;">
+                    <span style="color: #374151; font-size: 14px; font-weight: 500;">
+                        <i class="fas fa-list-ol"></i> Exercise {{ current_exercise_index + 1 }} of {{ total_exercises_in_lesson }}
+                    </span>
+                    <span style="color: #6b7280; font-size: 13px;">
+                        {{ exercises_completed_count }} completed
+                    </span>
+                </div>
+                {% endif %}
+                <div class="exercise-description" style="margin-top: 15px;">
                     {{ exercise.description|safe }}
                 </div>
             </div>
@@ -839,10 +951,18 @@
                     <div class="editor-title">
                         <i class="fab fa-python"></i> Python Code Editor
                     </div>
-                    <button id="btn-run-code" class="run-button">
-                        <span id="run-icon">▶</span>
-                        <span id="run-text">Run Code</span>
-                    </button>
+                    <div class="editor-actions">
+                        <button id="btn-run-code" class="run-button">
+                            <span id="run-icon">▶</span>
+                            <span id="run-text">Run Code</span>
+                        </button>
+                        <button id="btn-get-hint" class="hint-button" style="display: none;">
+                            <i class="fas fa-lightbulb"></i> Get Hint
+                        </button>
+                        <button id="btn-code-review" class="review-button" style="display: none;">
+                            <i class="fas fa-star"></i> Get Review
+                        </button>
+                    </div>
                 </div>
                 <div id="code-editor">{{ starter_code }}</div>
             </div>
@@ -868,15 +988,17 @@
         <!-- Navigation Buttons -->
         <div class="exercise-nav-buttons">
             {% if prev_exercise %}
-            <a href="{{ url_for('python_practice.course_subtopics', course_id=course_id, lesson_id=lesson_id_param, exercise_order=prev_exercise.order_index) }}" 
+            <a href="{{ url_for('python_practice.view_exercise', exercise_id=prev_exercise.id, course_id=course_id, lesson_id=lesson_id_param) }}" 
                class="nav-btn nav-btn-secondary">
                 ← Previous Exercise
             </a>
+            {% else %}
+            <div style="flex: 1;"></div>
             {% endif %}
             
             {% if next_exercise %}
-            <a href="{{ url_for('python_practice.course_subtopics', course_id=course_id, lesson_id=lesson_id_param, exercise_order=next_exercise.order_index) }}" 
-               class="nav-btn nav-btn-primary">
+            <a href="{{ url_for('python_practice.view_exercise', exercise_id=next_exercise.id, course_id=course_id, lesson_id=lesson_id_param) }}" 
+               class="nav-btn nav-btn-primary" id="next-exercise-btn">
                 Next Exercise →
             </a>
             {% elif enrollment %}
@@ -908,8 +1030,28 @@ const csrfToken = document.getElementById('csrf-token').value;
 require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' }});
 
 require(['vs/editor/editor.main'], function() {
+    // Use last submission code if available, otherwise use starter code
+    let initialCode;
+    {% if last_submission_code %}
+    initialCode = {{ last_submission_code|tojson|safe }};
+    console.log('Loading last submission code');
+    {% else %}
+    initialCode = `{{ starter_code|safe }}`;
+    console.log('Loading starter code');
+    {% endif %}
+    
+    // Also try localStorage as immediate fallback for better UX
+    const storageKey = `exercise_${exerciseId}_draft`;
+    const draftCode = localStorage.getItem(storageKey);
+    if (draftCode && draftCode !== initialCode) {
+        // If there's a draft that's different from saved submission, ask user
+        if (confirm('You have unsaved changes in your browser. Would you like to restore them?')) {
+            initialCode = draftCode;
+        }
+    }
+    
     editor = monaco.editor.create(document.getElementById('code-editor'), {
-        value: `{{ starter_code|safe }}`,
+        value: initialCode,
         language: 'python',
         theme: 'vs-dark',
         automaticLayout: true,
@@ -919,7 +1061,27 @@ require(['vs/editor/editor.main'], function() {
         lineNumbers: 'on',
         renderWhitespace: 'selection',
         tabSize: 4,
+        padding: { top: 0, bottom: 0 },
+        scrollbar: {
+            vertical: 'auto',
+            horizontal: 'auto'
+        }
     });
+    
+    // Auto-save draft to localStorage as user types
+    let saveTimeout;
+    editor.onDidChangeModelContent(() => {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+            const code = editor.getValue();
+            localStorage.setItem(storageKey, code);
+        }, 1000); // Save 1 second after user stops typing
+    });
+    
+    // Ensure editor fills container properly
+    setTimeout(() => {
+        editor.layout();
+    }, 100);
     
     // Keyboard shortcut: Ctrl+Enter to run code
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, runCode);
@@ -958,6 +1120,9 @@ document.addEventListener('mouseup', function() {
         document.body.style.userSelect = '';
     }
 });
+
+// Global variable to store last execution result
+let lastExecutionResult = null;
 
 // Hint toggle
 function toggleHint(index) {
@@ -1013,6 +1178,10 @@ function runCode() {
         runIcon.textContent = '▶';
         runText.textContent = 'Run Code';
         
+        // Clear localStorage draft since we just saved to database
+        const storageKey = `exercise_${exerciseId}_draft`;
+        localStorage.removeItem(storageKey);
+        
         // Display results
         displayResults(data);
     })
@@ -1026,6 +1195,21 @@ function runCode() {
 }
 
 function displayResults(data) {
+    // Debug: Log the received data
+    console.log('displayResults called with data:', data);
+    console.log('test_results:', data.test_results);
+    console.log('tests_passed:', data.tests_passed);
+    console.log('tests_failed:', data.tests_failed);
+    console.log('status:', data.status);
+    
+    // Store last execution result for AI features
+    lastExecutionResult = {
+        status: data.status,
+        error: data.error,
+        output: data.output,
+        test_results: data.test_results || []
+    };
+    
     // Show output if present
     if (data.output || data.error) {
         const outputSection = document.getElementById('output-section');
@@ -1042,13 +1226,21 @@ function displayResults(data) {
     
     // Show test results
     if (data.test_results && data.test_results.length > 0) {
+        console.log('Calling displayTestResults with', data.test_results.length, 'tests');
         displayTestResults(data.test_results, data.tests_passed, data.tests_failed, data.status);
+    } else {
+        console.log('No test results to display');
     }
 }
 
 function displayTestResults(testResults, passed, failed, status) {
     const container = document.getElementById('test-results-container');
     const summary = document.getElementById('test-summary');
+    
+    if (!container || !summary) {
+        console.error('Test results container or summary not found!');
+        return;
+    }
     
     // Clear previous results
     container.innerHTML = '';
@@ -1094,6 +1286,7 @@ function displayTestResults(testResults, passed, failed, status) {
     `;
     
     document.getElementById('test-results-section').style.display = 'block';
+    console.log('Test results section should now be visible');
     
     // Scroll to results with better visibility
     setTimeout(() => {
@@ -1108,6 +1301,9 @@ function displayTestResults(testResults, passed, failed, status) {
     if (status === 'passed') {
         checkLessonCompletion();
     }
+    
+    // Show/hide AI buttons based on test results
+    updateAIButtons(status, testResults);
 }
 
 // Check if all exercises in current lesson are completed
@@ -1133,6 +1329,205 @@ function escapeHtml(text) {
     div.textContent = String(text);
     return div.innerHTML;
 }
+
+// AI Hint and Review Functions
+
+function updateAIButtons(status, testResults) {
+    const hintButton = document.getElementById('btn-get-hint');
+    const reviewButton = document.getElementById('btn-code-review');
+    
+    console.log('Updating AI buttons - status:', status, 'testResults:', testResults);
+    
+    // Check if there are any failed tests
+    const hasFailedTests = testResults && testResults.some(t => !t.passed);
+    
+    // Show hint button if tests failed or there's an error
+    if (status === 'error' || hasFailedTests) {
+        if (hintButton) {
+            hintButton.style.display = 'flex';
+            console.log('Showing hint button');
+        }
+        if (reviewButton) reviewButton.style.display = 'none';
+    }
+    // Show review button if all tests passed
+    else if (status === 'passed') {
+        if (hintButton) hintButton.style.display = 'none';
+        if (reviewButton) {
+            reviewButton.style.display = 'flex';
+            console.log('Showing review button');
+        }
+    }
+    // Hide both if no execution yet
+    else {
+        if (hintButton) hintButton.style.display = 'none';
+        if (reviewButton) reviewButton.style.display = 'none';
+        console.log('Hiding both buttons - no valid status');
+    }
+}
+
+// Get AI Hint
+document.getElementById('btn-get-hint').addEventListener('click', async function() {
+    const code = editor.getValue();
+    const hintButton = this;
+    
+    if (!code.trim()) {
+        alert('Please write some code first!');
+        return;
+    }
+    
+    // Get failed tests from last execution
+    const failedTests = lastExecutionResult?.test_results?.filter(t => !t.passed) || [];
+    
+    // Show loading state
+    hintButton.disabled = true;
+    hintButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Getting hint...';
+    
+    try {
+        const response = await fetch(`/python-practice/exercise/{{ exercise.id }}/hint`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                code: code,
+                error_message: lastExecutionResult?.error || null,
+                failed_tests: failedTests
+            })
+        });
+        
+        const data = await response.json();
+        
+        // Reset button
+        hintButton.disabled = false;
+        hintButton.innerHTML = '<i class="fas fa-lightbulb"></i> Get Hint';
+        
+        if (data.success) {
+            displayAIHint(data);
+        } else {
+            alert(data.hint || 'AI hints are not available at the moment.');
+        }
+    } catch (error) {
+        console.error('Error getting hint:', error);
+        hintButton.disabled = false;
+        hintButton.innerHTML = '<i class="fas fa-lightbulb"></i> Get Hint';
+        alert('Failed to get hint. Please try again.');
+    }
+});
+
+// Get Code Review
+document.getElementById('btn-code-review').addEventListener('click', async function() {
+    const code = editor.getValue();
+    const reviewButton = this;
+    
+    if (!code.trim()) {
+        alert('Please write some code first!');
+        return;
+    }
+    
+    // Show loading state
+    reviewButton.disabled = true;
+    reviewButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Getting review...';
+    
+    try {
+        const response = await fetch(`/python-practice/exercise/{{ exercise.id }}/review`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                code: code
+            })
+        });
+        
+        const data = await response.json();
+        
+        // Reset button
+        reviewButton.disabled = false;
+        reviewButton.innerHTML = '<i class="fas fa-star"></i> Get Review';
+        
+        if (data.success) {
+            displayCodeReview(data);
+        } else {
+            alert(data.feedback || 'Code review is not available at the moment.');
+        }
+    } catch (error) {
+        console.error('Error getting review:', error);
+        reviewButton.disabled = false;
+        reviewButton.innerHTML = '<i class="fas fa-star"></i> Get Review';
+        alert('Failed to get review. Please try again.');
+    }
+});
+
+function displayAIHint(data) {
+    // Remove any existing AI feedback
+    const existing = document.querySelector('.ai-feedback-box');
+    if (existing) existing.remove();
+    
+    // Create hint display
+    const hintBox = document.createElement('div');
+    hintBox.className = 'ai-feedback-box';
+    hintBox.innerHTML = `
+        <h4><i class="fas fa-lightbulb"></i> AI Hint</h4>
+        <p>${escapeHtml(data.hint)}</p>
+        ${data.encouragement ? `<p class="encouragement">${escapeHtml(data.encouragement)}</p>` : ''}
+        ${data.cost_estimate ? `<small style="color: #78350f; opacity: 0.7;">Cost: ~$${data.cost_estimate}</small>` : ''}
+    `;
+    
+    // Insert after test results or output
+    const testSection = document.getElementById('test-results-section');
+    const outputSection = document.getElementById('output-section');
+    const insertAfter = testSection.style.display !== 'none' ? testSection : outputSection;
+    
+    insertAfter.parentNode.insertBefore(hintBox, insertAfter.nextSibling);
+}
+
+function displayCodeReview(data) {
+    // Remove any existing AI feedback
+    const existing = document.querySelector('.ai-feedback-box');
+    if (existing) existing.remove();
+    
+    // Create review display
+    const reviewBox = document.createElement('div');
+    reviewBox.className = 'ai-feedback-box review';
+    
+    let html = `
+        <h4><i class="fas fa-star"></i> Code Review</h4>
+        <p>${escapeHtml(data.feedback)}</p>
+    `;
+    
+    if (data.strengths && data.strengths.length > 0) {
+        html += '<p><strong>Strengths:</strong></p><ul class="ai-feedback-list">';
+        data.strengths.forEach(s => {
+            html += `<li>${escapeHtml(s)}</li>`;
+        });
+        html += '</ul>';
+    }
+    
+    if (data.suggestions && data.suggestions.length > 0) {
+        html += '<p><strong>Suggestions for improvement:</strong></p><ul class="ai-feedback-list">';
+        data.suggestions.forEach(s => {
+            html += `<li>${escapeHtml(s)}</li>`;
+        });
+        html += '</ul>';
+    }
+    
+    if (data.cost_estimate) {
+        html += `<small style="color: #5b21b6; opacity: 0.7;">Cost: ~$${data.cost_estimate}</small>`;
+    }
+    
+    reviewBox.innerHTML = html;
+    
+    // Insert after test results
+    const testSection = document.getElementById('test-results-section');
+    testSection.parentNode.insertBefore(reviewBox, testSection.nextSibling);
+}
+
+// Update displayResults to show AI buttons
+const originalDisplayResults = displayResults;
+displayResults = function(data) {
+    originalDisplayResults(data);
+    updateAIButtons(data.status, data.test_results);
+};
 
 // Initialize syntax highlighting for code blocks in lesson content
 document.addEventListener('DOMContentLoaded', function() {

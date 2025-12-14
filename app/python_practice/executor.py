@@ -8,6 +8,9 @@ import tempfile
 import os
 from typing import Dict, List, Any
 
+# Import enhanced executor
+from app.python_practice.executor_enhanced import execute_python_code_enhanced
+
 
 def execute_python_code(code: str, test_cases: List[Dict], timeout: int = 30) -> Dict[str, Any]:
     """
@@ -36,9 +39,8 @@ def execute_python_code(code: str, test_cases: List[Dict], timeout: int = 30) ->
     start_time = time.time()
     
     try:
-        # For now, use a simple local execution (will be replaced with Docker)
-        # WARNING: This is NOT secure for production - use Docker sandbox
-        result = execute_local_python(code, test_cases, timeout)
+        # Use enhanced executor with flexible test validation
+        result = execute_python_code_enhanced(code, test_cases, timeout)
         
     except Exception as e:
         result['status'] = 'error'

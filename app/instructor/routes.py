@@ -422,13 +422,16 @@ def edit_exercise(course_id, exercise_id):
     if exercise.tutorial_id != course_id:
         abort(404)
     
+    # Populate lesson choices first
+    lessons = Lesson.query.filter_by(tutorial_id=course_id).order_by(Lesson.order_index).all()
+    
+    # Initialize form
     form = ExerciseForm(obj=exercise)
     
-    # Populate lesson choices
-    lessons = Lesson.query.filter_by(tutorial_id=course_id).order_by(Lesson.order_index).all()
+    # Set lesson choices
     form.lesson_id.choices = [(0, '-- No Lesson (General Exercise) --')] + [(l.id, l.title) for l in lessons]
     
-    # Set current lesson_id
+    # Set current lesson_id for GET requests
     if request.method == 'GET':
         form.lesson_id.data = exercise.lesson_id if exercise.lesson_id else 0
     
