@@ -94,6 +94,8 @@ class ExerciseForm(FlaskForm):
         Length(min=3, max=300)
     ])
     
+    lesson_id = SelectField('Lesson (Optional)', coerce=int, validators=[Optional()])
+    
     description = TextAreaField('Description', validators=[
         DataRequired(message='Description is required')
     ])

@@ -364,6 +364,10 @@ def create_exercise(course_id):
     
     form = ExerciseForm()
     
+    # Populate lesson choices
+    lessons = Lesson.query.filter_by(tutorial_id=course_id).order_by(Lesson.order_index).all()
+    form.lesson_id.choices = [(0, '-- No Lesson (General Exercise) --')] + [(l.id, l.title) for l in lessons]
+    
     # Set default order_index
     if request.method == 'GET':
         max_order = db.session.query(func.max(Exercise.order_index)).filter_by(tutorial_id=course_id).scalar() or -1
@@ -375,6 +379,7 @@ def create_exercise(course_id):
         
         exercise = Exercise(
             tutorial_id=course_id,
+            lesson_id=form.lesson_id.data if form.lesson_id.data != 0 else None,
             title=form.title.data,
             slug=slug,
             description=form.description.data,
@@ -416,8 +421,17 @@ def edit_exercise(course_id, exercise_id):
     
     form = ExerciseForm(obj=exercise)
     
+    # Populate lesson choices
+    lessons = Lesson.query.filter_by(tutorial_id=course_id).order_by(Lesson.order_index).all()
+    form.lesson_id.choices = [(0, '-- No Lesson (General Exercise) --')] + [(l.id, l.title) for l in lessons]
+    
+    # Set current lesson_id
+    if request.method == 'GET':
+        form.lesson_id.data = exercise.lesson_id if exercise.lesson_id else 0
+    
     if form.validate_on_submit():
         exercise.title = form.title.data
+        exercise.lesson_id = form.lesson_id.data if form.lesson_id.data != 0 else None
         exercise.description = form.description.data
         exercise.exercise_type = form.exercise_type.data
         exercise.difficulty = form.difficulty.data
