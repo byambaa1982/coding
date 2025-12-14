@@ -104,7 +104,7 @@ def enroll_free(tutorial_id):
     
     if existing_enrollment:
         flash('You are already enrolled in this course!', 'info')
-        return redirect(url_for('learning.tutorial_overview', tutorial_id=tutorial_id))
+        return redirect(url_for('account.my_courses'))
     
     # Check if tutorial is published
     if tutorial.status != 'published':
@@ -122,7 +122,7 @@ def enroll_free(tutorial_id):
     db.session.commit()
     
     flash(f'Successfully enrolled in "{tutorial.title}"! Start learning now.', 'success')
-    return redirect(url_for('learning.tutorial_overview', tutorial_id=tutorial_id))
+    return redirect(url_for('account.my_courses'))
 
 
 @payment_bp.route('/add-to-cart/<int:tutorial_id>', methods=['POST'])
@@ -451,7 +451,7 @@ def checkout_success():
         logger.info(f"Completed order {order.order_number} for user {order.user_id}")
         
         flash('Payment successful! You now have access to your courses.', 'success')
-        return redirect(url_for('payment.order_confirmation', order_id=order.id))
+        return redirect(url_for('account.my_courses'))
         
     except Exception as e:
         logger.error(f"Error processing successful payment: {str(e)}")

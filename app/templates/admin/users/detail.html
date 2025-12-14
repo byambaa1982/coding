@@ -242,6 +242,7 @@
                             <td class="py-3 px-4 text-right">
                                 <form method="POST" action="{{ url_for('admin.user_manual_unenroll', user_id=user.id, enrollment_id=enrollment.id) }}" 
                                       onsubmit="return confirm('Are you sure you want to unenroll this user?');" class="inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                                     <button type="submit" class="text-red-600 hover:text-red-900" title="Unenroll">
                                         <i class="fas fa-times"></i>
                                     </button>
