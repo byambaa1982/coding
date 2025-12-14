@@ -12,6 +12,7 @@ from app.models import (
     NewTutorial, Lesson, Quiz, QuizQuestion, QuizAttempt, QuizAnswer,
     TutorialEnrollment, LessonProgress, Exercise
 )
+from app.utils.markdown_helper import render_markdown
 
 
 @learning_bp.route('/tutorial/<int:tutorial_id>')
@@ -109,6 +110,9 @@ def view_lesson(lesson_id):
     # Get quizzes for this lesson
     quizzes = Quiz.query.filter_by(lesson_id=lesson_id).order_by(Quiz.order_index).all()
     
+    # Render markdown content
+    rendered_content = render_markdown(lesson.content) if lesson.content else None
+    
     return render_template('learning/lesson.html',
                          lesson=lesson,
                          tutorial=tutorial,
@@ -117,7 +121,8 @@ def view_lesson(lesson_id):
                          prev_lesson=prev_lesson,
                          next_lesson=next_lesson,
                          exercises=exercises,
-                         quizzes=quizzes)
+                         quizzes=quizzes,
+                         rendered_content=rendered_content)
 
 
 @learning_bp.route('/lesson/<int:lesson_id>/mark-complete', methods=['POST'])

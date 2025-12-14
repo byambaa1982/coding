@@ -48,6 +48,11 @@ class Config:
     CACHE_REDIS_URL = REDIS_URL
     CACHE_DEFAULT_TIMEOUT = 300  # 5 minutes default
     
+    # File Uploads (Phase 3 - Instructor Panel)
+    UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app', 'static', 'uploads')
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+    
     # Session
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
     SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS

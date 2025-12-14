@@ -1,0 +1,128 @@
+"""Forms for instructor panel."""
+from flask_wtf import FlaskForm
+from wtforms import StringField, TextAreaField, DecimalField, SelectField, BooleanField, IntegerField
+from wtforms.validators import DataRequired, Length, NumberRange, Optional, URL
+
+
+class CourseForm(FlaskForm):
+    """Form for creating/editing courses."""
+    title = StringField('Course Title', validators=[
+        DataRequired(message='Title is required'),
+        Length(min=3, max=300, message='Title must be between 3 and 300 characters')
+    ])
+    
+    short_description = TextAreaField('Short Description', validators=[
+        DataRequired(message='Short description is required'),
+        Length(max=500, message='Short description must be less than 500 characters')
+    ])
+    
+    description = TextAreaField('Full Description', validators=[
+        DataRequired(message='Description is required')
+    ])
+    
+    course_type = SelectField('Course Type', 
+        choices=[('python', 'Python'), ('sql', 'SQL')],
+        validators=[DataRequired()])
+    
+    category = StringField('Category', validators=[
+        DataRequired(message='Category is required'),
+        Length(max=100)
+    ])
+    
+    difficulty_level = SelectField('Difficulty Level',
+        choices=[('beginner', 'Beginner'), ('intermediate', 'Intermediate'), ('advanced', 'Advanced')],
+        validators=[DataRequired()])
+    
+    price = DecimalField('Price (USD)', validators=[
+        DataRequired(message='Price is required'),
+        NumberRange(min=0, message='Price must be 0 or greater')
+    ], places=2)
+    
+    is_free = BooleanField('Make this course free')
+    
+    estimated_duration_hours = DecimalField('Estimated Duration (Hours)', validators=[
+        Optional(),
+        NumberRange(min=0.5, max=999, message='Duration must be between 0.5 and 999 hours')
+    ], places=2)
+    
+    thumbnail_url = StringField('Thumbnail URL', validators=[Optional(), URL()])
+    preview_video_url = StringField('Preview Video URL', validators=[Optional(), URL()])
+    tags = StringField('Tags (comma-separated)', validators=[Optional()])
+
+
+class LessonForm(FlaskForm):
+    """Form for creating/editing lessons."""
+    title = StringField('Lesson Title', validators=[
+        DataRequired(message='Title is required'),
+        Length(min=3, max=300, message='Title must be between 3 and 300 characters')
+    ])
+    
+    description = TextAreaField('Description', validators=[Optional()])
+    
+    section_name = StringField('Section Name (optional)', validators=[
+        Optional(),
+        Length(max=200)
+    ])
+    
+    content_type = SelectField('Content Type',
+        choices=[('text', 'Text/Markdown'), ('video', 'Video')],
+        validators=[DataRequired()])
+    
+    content = TextAreaField('Content (Markdown)', validators=[
+        DataRequired(message='Content is required')
+    ])
+    
+    video_url = StringField('Video URL (if applicable)', validators=[Optional(), URL()])
+    video_duration_seconds = IntegerField('Video Duration (seconds)', validators=[Optional()])
+    
+    estimated_duration_minutes = IntegerField('Estimated Duration (minutes)', validators=[
+        Optional(),
+        NumberRange(min=1, max=999)
+    ])
+    
+    is_free_preview = BooleanField('Allow free preview')
+    order_index = IntegerField('Order (position in course)', validators=[
+        DataRequired(message='Order is required'),
+        NumberRange(min=0)
+    ])
+
+
+class ExerciseForm(FlaskForm):
+    """Form for creating/editing exercises."""
+    title = StringField('Exercise Title', validators=[
+        DataRequired(message='Title is required'),
+        Length(min=3, max=300)
+    ])
+    
+    description = TextAreaField('Description', validators=[
+        DataRequired(message='Description is required')
+    ])
+    
+    exercise_type = SelectField('Exercise Type',
+        choices=[('python', 'Python'), ('sql', 'SQL')],
+        validators=[DataRequired()])
+    
+    difficulty = SelectField('Difficulty',
+        choices=[('easy', 'Easy'), ('medium', 'Medium'), ('hard', 'Hard')],
+        validators=[DataRequired()])
+    
+    starter_code = TextAreaField('Starter Code', validators=[Optional()])
+    solution_code = TextAreaField('Solution Code', validators=[Optional()])
+    
+    test_cases = TextAreaField('Test Cases (JSON format)', validators=[Optional()])
+    hints = TextAreaField('Hints (JSON array)', validators=[Optional()])
+    
+    # SQL-specific fields
+    database_schema = TextAreaField('Database Schema (DDL)', validators=[Optional()])
+    sample_data = TextAreaField('Sample Data (INSERT statements)', validators=[Optional()])
+    expected_output = TextAreaField('Expected Output (JSON)', validators=[Optional()])
+    
+    points = IntegerField('Points', validators=[
+        DataRequired(),
+        NumberRange(min=1, max=100)
+    ])
+    
+    order_index = IntegerField('Order', validators=[
+        DataRequired(),
+        NumberRange(min=0)
+    ])

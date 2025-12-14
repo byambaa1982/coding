@@ -2,6 +2,79 @@
 
 {% block title %}{{ lesson.title }} - {{ tutorial.title }}{% endblock %}
 
+{% block head %}
+<!-- Syntax highlighting for code blocks -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<style>
+    /* Enhanced markdown content styles */
+    .lesson-content {
+        line-height: 1.8;
+        font-size: 1.05rem;
+    }
+    .lesson-content h1, .lesson-content h2, .lesson-content h3 {
+        margin-top: 1.5em;
+        margin-bottom: 0.5em;
+        font-weight: 700;
+    }
+    .lesson-content h1 { font-size: 2em; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.3em; }
+    .lesson-content h2 { font-size: 1.75em; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.25em; }
+    .lesson-content h3 { font-size: 1.5em; }
+    .lesson-content p { margin-bottom: 1em; }
+    .lesson-content code { 
+        background-color: #f3f4f6; 
+        padding: 0.2em 0.4em; 
+        border-radius: 3px; 
+        font-size: 0.9em;
+    }
+    .lesson-content pre { 
+        background-color: #1e1e1e; 
+        padding: 1em; 
+        border-radius: 8px; 
+        overflow-x: auto;
+        margin-bottom: 1em;
+    }
+    .lesson-content pre code {
+        background-color: transparent;
+        padding: 0;
+        color: #d4d4d4;
+    }
+    .lesson-content img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+        margin: 1em 0;
+    }
+    .lesson-content blockquote {
+        border-left: 4px solid #3b82f6;
+        padding-left: 1em;
+        margin-left: 0;
+        color: #6b7280;
+        font-style: italic;
+    }
+    .lesson-content table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 1em;
+    }
+    .lesson-content table th, .lesson-content table td {
+        border: 1px solid #e5e7eb;
+        padding: 0.5em;
+        text-align: left;
+    }
+    .lesson-content table th {
+        background-color: #f9fafb;
+        font-weight: 600;
+    }
+    .lesson-content ul, .lesson-content ol {
+        margin-bottom: 1em;
+        padding-left: 2em;
+    }
+    .lesson-content li {
+        margin-bottom: 0.5em;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container mx-auto px-4 py-8">
     <!-- Breadcrumb -->
@@ -78,7 +151,11 @@
                 {% endif %}
 
                 <!-- Text Content -->
-                {% if lesson.content %}
+                {% if rendered_content %}
+                <div class="lesson-content mb-6">
+                    {{ rendered_content }}
+                </div>
+                {% elif lesson.content %}
                 <div class="prose max-w-none mb-6">
                     {{ lesson.content|safe }}
                 </div>
@@ -205,4 +282,11 @@
 </div>
 
 <script src="{{ url_for('static', filename='js/learning.js') }}"></script>
+
+<!-- Syntax highlighting for code blocks -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
 {% endblock %}

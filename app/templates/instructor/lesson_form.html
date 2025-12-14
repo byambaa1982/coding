@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Create Lesson' if mode == 'create' else 'Edit Lesson' }}{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+<script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-5xl mx-auto">
+        <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-900">{{ 'Create New Lesson' if mode == 'create' else 'Edit Lesson' }}</h2>
+                <p class="text-gray-600 text-sm mt-1">Course: {{ course.title }}</p>
+            </div>
+            <div class="p-6">
+                <form method="POST" action="" class="space-y-6">
+                    {{ form.hidden_tag() }}
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.title.label.text }}</label>
+                        {{ form.title(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500") }}
+                        {% if form.title.errors %}<p class="mt-1 text-sm text-red-600">{{ form.title.errors[0] }}</p>{% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.description.label.text }}</label>
+                        {{ form.description(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500", rows="2") }}
+                        <p class="mt-1 text-sm text-gray-500">Optional brief description</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.section_name.label.text }}</label>
+                            {{ form.section_name(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500") }}
+                            <p class="mt-1 text-xs text-gray-500">Group lessons by section</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.content_type.label.text }}</label>
+                            {{ form.content_type(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500") }}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.order_index.label.text }}</label>
+                            {{ form.order_index(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500") }}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.content.label.text }}</label>
+                        {{ form.content(id="markdown-editor") }}
+                        <p class="mt-1 text-sm text-gray-500">Use Markdown formatting. Supports headings, lists, code blocks, images, and more.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.video_url.label.text }}</label>
+                            {{ form.video_url(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500") }}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.video_duration_seconds.label.text }}</label>
+                            {{ form.video_duration_seconds(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500") }}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.estimated_duration_minutes.label.text }}</label>
+                            {{ form.estimated_duration_minutes(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500") }}
+                        </div>
+                    </div>
+
+                    <div class="flex items-center">
+                        {{ form.is_free_preview(class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500") }}
+                        <label class="ml-2 text-sm text-gray-700">{{ form.is_free_preview.label.text }}</label>
+                        <p class="ml-4 text-xs text-gray-500">Allow non-enrolled users to preview this lesson</p>
+                    </div>
+
+                    <div class="flex gap-3 pt-4">
+                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            {{ 'Create Lesson' if mode == 'create' else 'Update Lesson' }}
+                        </button>
+                        <a href="{{ url_for('instructor.course_detail', course_id=course.id) }}" class="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var easyMDE = new EasyMDE({
+    element: document.getElementById('markdown-editor'),
+    spellChecker: false,
+    autosave: { enabled: true, uniqueId: "lesson-editor", delay: 1000 },
+    toolbar: [
+        "bold", "italic", "heading", "|", 
+        "code", "quote", "unordered-list", "ordered-list", "|", 
+        "link", {
+            name: "image",
+            action: function customImageFunction(editor) {
+                var input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = function() {
+                    var file = input.files[0];
+                    if (!file) return;
+                    
+                    var formData = new FormData();
+                    formData.append('image', file);
+                    
+                    // Show uploading message
+                    var cm = editor.codemirror;
+                    var startPoint = cm.getCursor("start");
+                    cm.replaceSelection("![Uploading...]()");
+                    
+                    fetch('{{ url_for("instructor.upload_image") }}', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            var endPoint = cm.getCursor("start");
+                            cm.replaceRange("![Image](" + data.url + ")", startPoint, endPoint);
+                        } else {
+                            alert('Upload failed: ' + data.error);
+                            cm.replaceRange("", startPoint, cm.getCursor("start"));
+                        }
+                    })
+                    .catch(error => {
+                        alert('Upload error: ' + error);
+                        cm.replaceRange("", startPoint, cm.getCursor("start"));
+                    });
+                };
+                input.click();
+            },
+            className: "fa fa-image",
+            title: "Upload Image",
+        }, "|", 
+        "preview", "side-by-side", "fullscreen", "|", 
+        "guide"
+    ],
+    placeholder: "Write your lesson content here using Markdown...\n\n# Example Heading\n\nYour text here.\n\n```python\n# Code examples\nprint('Hello!')\n```\n\n**Tip**: Click the image icon to upload images directly!",
+    minHeight: "400px",
+    previewRender: function(plainText) {
+        // Custom preview with syntax highlighting
+        return this.parent.markdown(plainText);
+    }
+});
+
+// Add paste image support
+document.getElementById('markdown-editor').addEventListener('paste', function(e) {
+    var items = e.clipboardData.items;
+    for (var i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+            e.preventDefault();
+            var blob = items[i].getAsFile();
+            
+            var formData = new FormData();
+            formData.append('image', blob, 'pasted-image.png');
+            
+            var cm = easyMDE.codemirror;
+            var startPoint = cm.getCursor("start");
+            cm.replaceSelection("![Uploading pasted image...]()");
+            
+            fetch('{{ url_for("instructor.upload_image") }}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    var endPoint = cm.getCursor("start");
+                    cm.replaceRange("![Pasted Image](" + data.url + ")", startPoint, endPoint);
+                } else {
+                    alert('Upload failed: ' + data.error);
+                    cm.replaceRange("", startPoint, cm.getCursor("start"));
+                }
+            })
+            .catch(error => {
+                alert('Upload error: ' + error);
+                cm.replaceRange("", startPoint, cm.getCursor("start"));
+            });
+            break;
+        }
+    }
+});
+</script>
+{% endblock %}
