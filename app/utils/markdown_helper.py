@@ -1,7 +1,7 @@
 """Markdown rendering utilities for instructor panel."""
 import markdown2
 import bleach
-from flask import Markup
+from markupsafe import Markup
 
 
 # Allowed HTML tags and attributes for security
@@ -53,7 +53,6 @@ def render_markdown(content):
             'strike',              # ~~strikethrough~~
             'task_list',           # - [ ] task lists
             'smarty-pants',        # Smart quotes
-            'link-patterns',       # Auto-link URLs
         ]
     )
     

@@ -46,6 +46,7 @@
         {% endif %}
         
         <form method="POST" action="{{ url_for('instructor.delete_course', course_id=course.id) }}" style="display: inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
             <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition" onclick="return confirm('Delete this course permanently?')">
                 <i class="fas fa-trash mr-2"></i> Delete
             </button>
@@ -124,6 +125,7 @@
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     <form method="POST" action="{{ url_for('instructor.delete_lesson', course_id=course.id, lesson_id=lesson.id) }}" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                                         <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Delete lesson?')">
                                             <i class="fas fa-trash"></i>
                                         </button>
@@ -188,6 +190,7 @@
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     <form method="POST" action="{{ url_for('instructor.delete_exercise', course_id=course.id, exercise_id=exercise.id) }}" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                                         <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Delete exercise?')">
                                             <i class="fas fa-trash"></i>
                                         </button>
