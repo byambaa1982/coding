@@ -11,10 +11,10 @@
                 <li><a href="{{ url_for('account.my_courses') }}" class="hover:text-green-600">My Courses</a></li>
                 <li><i class="fas fa-chevron-right text-xs"></i></li>
                 {% if enrollment %}
-                <li><a href="{{ url_for('sql_practice.course_subtopics', enrollment_id=enrollment.id) }}" class="hover:text-green-600">{{ exercise.tutorial.title }}</a></li>
+                <li><a href="{{ url_for('sql_practice.course_subtopics', course_id=course_id) }}" class="hover:text-green-600">{{ exercise.tutorial.title }}</a></li>
                 <li><i class="fas fa-chevron-right text-xs"></i></li>
                 {% if exercise.lesson %}
-                <li><a href="{{ url_for('sql_practice.lesson_exercises', lesson_id=exercise.lesson_id) }}" class="hover:text-green-600">{{ exercise.lesson.title }}</a></li>
+                <li><a href="{{ url_for('sql_practice.course_subtopics', course_id=course_id, lesson_id=exercise.lesson_id) }}" class="hover:text-green-600">{{ exercise.lesson.title }}</a></li>
                 <li><i class="fas fa-chevron-right text-xs"></i></li>
                 {% endif %}
                 {% endif %}
@@ -147,7 +147,7 @@
                 {% if enrollment %}
                 <div class="flex justify-between items-center mt-6">
                     {% if prev_exercise %}
-                    <a href="{{ url_for('sql_practice.exercise', exercise_id=prev_exercise.id) }}" 
+                    <a href="{{ url_for('sql_practice.course_subtopics', course_id=course_id, lesson_id=lesson_id_param, exercise_order=prev_exercise.order_index) }}" 
                        class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition">
                         ← Previous Exercise
                     </a>
@@ -156,12 +156,12 @@
                     {% endif %}
                     
                     {% if next_exercise %}
-                    <a href="{{ url_for('sql_practice.exercise', exercise_id=next_exercise.id) }}" 
+                    <a href="{{ url_for('sql_practice.course_subtopics', course_id=course_id, lesson_id=lesson_id_param, exercise_order=next_exercise.order_index) }}" 
                        class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition">
                         Next Exercise →
                     </a>
                     {% else %}
-                    <a href="{{ url_for('sql_practice.course_subtopics', enrollment_id=enrollment.id) }}" 
+                    <a href="{{ url_for('sql_practice.course_subtopics', course_id=course_id) }}" 
                        class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition">
                         🎉 Back to Topics →
                     </a>

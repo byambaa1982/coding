@@ -48,13 +48,13 @@ def get_continue_learning_destination(user_id, enrollment_id):
         logger.info(f"Routing user {user_id} to Python course subtopics for enrollment {enrollment_id}")
         return {
             'type': 'subtopics',
-            'url': url_for('python_practice.course_subtopics', enrollment_id=enrollment_id)
+            'url': url_for('python_practice.course_subtopics', course_id=enrollment.tutorial_id)
         }
     elif enrollment.tutorial.course_type == 'sql':
         logger.info(f"Routing user {user_id} to SQL course subtopics for enrollment {enrollment_id}")
         return {
             'type': 'subtopics',
-            'url': url_for('sql_practice.course_subtopics', enrollment_id=enrollment_id)
+            'url': url_for('sql_practice.course_subtopics', course_id=enrollment.tutorial_id)
         }
     
     # 3. For other course types, keep the original logic

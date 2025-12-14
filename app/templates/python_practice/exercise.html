@@ -543,13 +543,16 @@
                         My Courses
                     </a>
                     <span style="margin: 0 8px;">/</span>
-                    <a href="{{ url_for('python_practice.course_subtopics', enrollment_id=enrollment.id) }}" 
+                    <a href="{{ url_for('python_practice.course_subtopics', course_id=course_id) }}" 
                        style="color: #6366f1; text-decoration: none; hover: text-decoration: underline;">
                         {{ exercise.tutorial.title }}
                     </a>
                     {% if lesson_content %}
                     <span style="margin: 0 8px;">/</span>
-                    <span style="color: #1f2937; font-weight: 500;">{{ lesson_content.title }}</span>
+                    <a href="{{ url_for('python_practice.course_subtopics', course_id=course_id, lesson_id=lesson_content.id) }}" 
+                       style="color: #6366f1; text-decoration: none; hover: text-decoration: underline;">
+                        {{ lesson_content.title }}
+                    </a>
                     {% endif %}
                 </nav>
             </div>
@@ -689,20 +692,20 @@
         <!-- Navigation Buttons -->
         <div class="exercise-nav-buttons">
             {% if prev_exercise %}
-            <a href="{{ url_for('python_practice.view_exercise', exercise_id=prev_exercise.id) }}" 
+            <a href="{{ url_for('python_practice.course_subtopics', course_id=course_id, lesson_id=lesson_id_param, exercise_order=prev_exercise.order_index) }}" 
                class="nav-btn nav-btn-secondary">
                 ← Previous Exercise
             </a>
             {% endif %}
             
             {% if next_exercise %}
-            <a href="{{ url_for('python_practice.view_exercise', exercise_id=next_exercise.id) }}" 
+            <a href="{{ url_for('python_practice.course_subtopics', course_id=course_id, lesson_id=lesson_id_param, exercise_order=next_exercise.order_index) }}" 
                class="nav-btn nav-btn-primary">
                 Next Exercise →
             </a>
             {% elif enrollment %}
             <!-- When all exercises completed, go back to subtopics -->
-            <a href="{{ url_for('python_practice.course_subtopics', enrollment_id=enrollment.id) }}" 
+            <a href="{{ url_for('python_practice.course_subtopics', course_id=course_id) }}" 
                class="nav-btn nav-btn-primary">
                 🎉 Back to Subtopics →
             </a>

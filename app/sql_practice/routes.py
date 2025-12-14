@@ -166,6 +166,10 @@ def reset_database():
 @login_required
 def exercise(exercise_id):
     """SQL exercise page"""
+    # Get optional course_id and lesson_id from query params
+    course_id = request.args.get('course_id', type=int)
+    lesson_id = request.args.get('lesson_id', type=int)
+    
     exercise = Exercise.query.get_or_404(exercise_id)
     
     # Ensure this is a SQL exercise
@@ -225,7 +229,9 @@ def exercise(exercise_id):
         submissions=submissions,
         next_exercise=next_exercise,
         prev_exercise=prev_exercise,
-        form=form
+        form=form,
+        course_id=course_id or exercise.tutorial_id,
+        lesson_id_param=lesson_id or exercise.lesson_id
     )
 
 
@@ -358,19 +364,101 @@ def validate_syntax():
     return jsonify(result)
 
 
-@sql_practice_bp.route('/course/<int:enrollment_id>/subtopics')
+@sql_practice_bp.route('/course/<int:course_id>/subtopics')
+@sql_practice_bp.route('/course/<int:course_id>/subtopics/<int:lesson_id>')
+@sql_practice_bp.route('/course/<int:course_id>/subtopics/<int:lesson_id>/exercise/<int:exercise_order>')
 @login_required
-def course_subtopics(enrollment_id):
-    """Display all subtopics (lessons) for a SQL course with progress."""
+def course_subtopics(course_id, lesson_id=None, exercise_order=None):
+    """Unified nested route for SQL course navigation.
+    
+    - /course/3/subtopics - Show all subtopics/lessons
+    - /course/3/subtopics/5 - Show exercises for lesson 5
+    - /course/3/subtopics/5/exercise/3 - Show exercise at order index 3
+    """
+    # Get enrollment for this course
     enrollment = TutorialEnrollment.query.filter_by(
-        id=enrollment_id,
         user_id=current_user.id,
+        tutorial_id=course_id,
         status='active'
-    ).first_or_404()
+    ).first()
+    
+    if not enrollment:
+        tutorial = NewTutorial.query.get_or_404(course_id)
+        from flask import flash
+        flash('You need to enroll in this course first.', 'warning')
+        return redirect(url_for('catalog.course_detail', slug=tutorial.slug))
     
     tutorial = enrollment.tutorial
     
-    # Get all lessons for this tutorial (these are the subtopics)
+    # If lesson_id and exercise_order provided, show specific exercise
+    if lesson_id is not None and exercise_order is not None:
+        lesson = Lesson.query.get_or_404(lesson_id)
+        
+        # Verify lesson belongs to this course
+        if lesson.tutorial_id != course_id:
+            from flask import abort
+            abort(404)
+        
+        # Get exercise by order_index
+        exercise = Exercise.query.filter_by(
+            lesson_id=lesson_id,
+            exercise_type='sql',
+            order_index=exercise_order
+        ).first_or_404()
+        
+        # Redirect to the original view_exercise with all data
+        return redirect(url_for('sql_practice.exercise', 
+                              exercise_id=exercise.id,
+                              course_id=course_id,
+                              lesson_id=lesson_id))
+    
+    # If only lesson_id provided, show exercises for that lesson
+    if lesson_id is not None:
+        lesson = Lesson.query.get_or_404(lesson_id)
+        
+        # Verify lesson belongs to this course
+        if lesson.tutorial_id != course_id:
+            from flask import abort
+            abort(404)
+        
+        # Get SQL exercises for this lesson
+        exercises = Exercise.query.filter_by(
+            lesson_id=lesson_id,
+            exercise_type='sql'
+        ).order_by(Exercise.order_index).all()
+        
+        # Get user's progress for each exercise
+        exercises_with_progress = []
+        for exercise in exercises:
+            best_submission = ExerciseSubmission.query.filter_by(
+                user_id=current_user.id,
+                exercise_id=exercise.id
+            ).order_by(ExerciseSubmission.score.desc()).first()
+            
+            has_solved = ExerciseSubmission.query.filter_by(
+                user_id=current_user.id,
+                exercise_id=exercise.id,
+                status='passed'
+            ).first() is not None
+            
+            exercises_with_progress.append({
+                'exercise': exercise,
+                'best_score': float(best_submission.score) if best_submission else 0,
+                'has_solved': has_solved,
+                'attempt_count': ExerciseSubmission.query.filter_by(
+                    user_id=current_user.id,
+                    exercise_id=exercise.id
+                ).count()
+            })
+        
+        return render_template('sql_practice/lesson_exercises.html',
+                             lesson=lesson,
+                             tutorial=tutorial,
+                             enrollment=enrollment,
+                             exercises=exercises_with_progress,
+                             course_id=course_id)
+    
+    # Default: show all lessons/subtopics
     lessons = Lesson.query.filter_by(
         tutorial_id=tutorial.id
     ).order_by(Lesson.order_index).all()
@@ -414,60 +502,18 @@ def course_subtopics(enrollment_id):
     return render_template('sql_practice/course_subtopics.html',
                          enrollment=enrollment,
                          tutorial=tutorial,
-                         lessons=lessons_with_progress)
+                         lessons=lessons_with_progress,
+                         course_id=course_id)
 
 
 @sql_practice_bp.route('/lesson/<int:lesson_id>/exercises')
 @login_required
 def lesson_exercises(lesson_id):
-    """Display all SQL exercises for a lesson."""
+    """Redirect to new nested URL structure for backward compatibility."""
     lesson = Lesson.query.get_or_404(lesson_id)
-    tutorial = lesson.tutorial
+    course_id = lesson.tutorial_id
     
-    # Check enrollment
-    enrollment = TutorialEnrollment.query.filter_by(
-        user_id=current_user.id,
-        tutorial_id=tutorial.id,
-        status='active'
-    ).first()
-    
-    if not enrollment:
-        from flask import flash
-        flash('You need to enroll in this course first.', 'warning')
-        return redirect(url_for('catalog.course_detail', slug=tutorial.slug))
-    
-    # Get SQL exercises for this lesson
-    exercises = Exercise.query.filter_by(
-        lesson_id=lesson_id,
-        exercise_type='sql'
-    ).order_by(Exercise.order_index).all()
-    
-    # Get user's progress for each exercise
-    exercises_with_progress = []
-    for exercise in exercises:
-        best_submission = ExerciseSubmission.query.filter_by(
-            user_id=current_user.id,
-            exercise_id=exercise.id
-        ).order_by(ExerciseSubmission.score.desc()).first()
-        
-        has_solved = ExerciseSubmission.query.filter_by(
-            user_id=current_user.id,
-            exercise_id=exercise.id,
-            status='passed'
-        ).first() is not None
-        
-        exercises_with_progress.append({
-            'exercise': exercise,
-            'best_score': float(best_submission.score) if best_submission else 0,
-            'has_solved': has_solved,
-            'attempt_count': ExerciseSubmission.query.filter_by(
-                user_id=current_user.id,
-                exercise_id=exercise.id
-            ).count()
-        })
-    
-    return render_template('sql_practice/lesson_exercises.html',
-                         lesson=lesson,
-                         tutorial=tutorial,
-                         enrollment=enrollment,
-                         exercises=exercises_with_progress)
+    # Redirect to new nested URL
+    return redirect(url_for('sql_practice.course_subtopics', 
+                          course_id=course_id, 
+                          lesson_id=lesson_id))
