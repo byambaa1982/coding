@@ -330,56 +330,88 @@
         margin-bottom: 10px;
     }
     
-    /* Exercise content styling */
+    /* Exercise content styling - NEW GRID LAYOUT */
     .exercise-content {
-        padding: 20px 30px;
+        padding: 0;
         flex: 1;
+        display: grid;
+        grid-template-rows: auto 1fr;
+        grid-template-columns: 1fr;
+        gap: 0;
+        overflow: hidden;
+        height: 100%;
+    }
+    
+    /* Collapsible Task Panel */
+    .task-panel {
+        background: #ffffff;
+        border-bottom: 2px solid #e5e7eb;
         display: flex;
         flex-direction: column;
-        overflow-y: auto;
+        overflow: hidden;
+        transition: all 0.3s ease;
     }
     
-    .exercise-header {
-        background: white;
-        padding: 20px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    .task-panel.collapsed {
+        grid-template-rows: auto 0;
     }
     
-    .exercise-title {
-        font-size: 22px;
-        font-weight: 600;
-        color: #1f2937;
-        margin-bottom: 10px;
-    }
-    
-    .exercise-meta {
+    .task-panel-header {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: white;
+        padding: 15px 30px;
+        cursor: pointer;
         display: flex;
-        gap: 15px;
+        justify-content: space-between;
         align-items: center;
-        margin-bottom: 15px;
+        user-select: none;
+        flex-shrink: 0;
+    }
+    
+    .task-panel-header:hover {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    }
+    
+    .task-panel-header-left {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex: 1;
+    }
+    
+    .task-title-main {
+        font-size: 18px;
+        font-weight: 700;
+        margin: 0;
+    }
+    
+    .task-badges {
+        display: flex;
+        gap: 8px;
+        align-items: center;
     }
     
     .difficulty-badge {
         display: inline-block;
         padding: 4px 12px;
         border-radius: 12px;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: bold;
+        text-transform: uppercase;
     }
     
-    .difficulty-easy { background-color: #d4edda; color: #155724; }
-    .difficulty-medium { background-color: #fff3cd; color: #856404; }
-    .difficulty-hard { background-color: #f8d7da; color: #721c24; }
+    .difficulty-easy { background-color: #10b981; color: white; }
+    .difficulty-medium { background-color: #f59e0b; color: white; }
+    .difficulty-hard { background-color: #ef4444; color: white; }
     
     .points-badge {
-        background: #6366f1;
+        background: rgba(255, 255, 255, 0.2);
         color: white;
         padding: 4px 12px;
         border-radius: 12px;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: bold;
+        backdrop-filter: blur(10px);
     }
     
     .solved-badge {
@@ -387,27 +419,352 @@
         color: white;
         padding: 4px 12px;
         border-radius: 12px;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: bold;
+        display: flex;
+        align-items: center;
+        gap: 4px;
     }
     
-    .exercise-description {
-        color: #4b5563;
+    .toggle-task-btn {
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        backdrop-filter: blur(10px);
+    }
+    
+    .toggle-task-btn:hover {
+        background: rgba(255, 255, 255, 0.25);
+    }
+    
+    .toggle-task-btn .arrow {
+        transition: transform 0.3s;
+        font-size: 10px;
+    }
+    
+    .task-panel.collapsed .toggle-task-btn .arrow {
+        transform: rotate(-90deg);
+    }
+    
+    .task-panel-body {
+        padding: 20px 30px;
+        overflow-y: auto;
+        max-height: 350px;
+        background: white;
+    }
+    
+    .task-panel.collapsed .task-panel-body {
+        max-height: 0;
+        padding: 0 30px;
+        opacity: 0;
+    }
+    
+    .task-description {
+        color: #374151;
         font-size: 15px;
-        line-height: 1.6;
+        line-height: 1.7;
     }
     
-    /* Code editor section */
+    /* Markdown styling for task description */
+    .task-description h1, .task-description h2, .task-description h3 {
+        color: #1f2937;
+        margin-top: 20px;
+        margin-bottom: 12px;
+        font-weight: 600;
+    }
+    
+    .task-description h1 { 
+        font-size: 22px; 
+        border-bottom: 2px solid #e5e7eb;
+        padding-bottom: 8px;
+    }
+    .task-description h2 { 
+        font-size: 19px;
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 6px;
+    }
+    .task-description h3 { 
+        font-size: 17px; 
+    }
+    
+    .task-description p {
+        margin-bottom: 15px;
+        line-height: 1.7;
+    }
+    
+    .task-description pre {
+        background: #282c34;
+        color: #abb2bf;
+        padding: 15px;
+        border-radius: 6px;
+        overflow-x: auto;
+        margin: 15px 0;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        border: 1px solid #21252b;
+    }
+    
+    .task-description pre code {
+        background: transparent;
+        color: inherit;
+        padding: 0;
+        border: none;
+        font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        font-size: 13px;
+        line-height: 1.5;
+        display: block;
+    }
+    
+    .task-description code {
+        background: #f3f4f6;
+        color: #e45649;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        font-size: 13px;
+        border: 1px solid #e1e4e8;
+        font-weight: 500;
+    }
+    
+    .task-description pre code.hljs {
+        padding: 0;
+        background: transparent;
+    }
+    
+    .task-description blockquote {
+        border-left: 4px solid #6366f1;
+        padding-left: 15px;
+        margin: 15px 0;
+        color: #6b7280;
+        font-style: italic;
+        background: #f9fafb;
+        padding: 12px 15px;
+        border-radius: 0 6px 6px 0;
+    }
+    
+    .task-description table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin: 15px 0;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        border-radius: 6px;
+        overflow: hidden;
+        border: 2px solid #e5e7eb;
+    }
+    
+    .task-description table th,
+    .task-description table td {
+        border: 1px solid #d1d5db;
+        padding: 10px 12px;
+        text-align: left;
+        font-size: 13px;
+    }
+    
+    .task-description table th {
+        background: linear-gradient(to bottom, #f9fafb, #f3f4f6);
+        font-weight: 700;
+        color: #111827;
+        border-bottom: 2px solid #6366f1;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+    }
+    
+    .task-description table tbody tr {
+        background: white;
+        transition: background 0.2s;
+    }
+    
+    .task-description table tbody tr:nth-child(even) {
+        background: #f9fafb;
+    }
+    
+    .task-description table tbody tr:hover {
+        background: #eff6ff;
+        box-shadow: inset 0 0 0 1px #6366f1;
+    }
+    
+    .task-description table td {
+        color: #374151;
+    }
+    
+    .task-description a {
+        color: #6366f1;
+        text-decoration: none;
+        border-bottom: 1px solid transparent;
+        transition: border-bottom 0.2s;
+    }
+    
+    .task-description a:hover {
+        border-bottom: 1px solid #6366f1;
+    }
+    
+    .task-description strong {
+        font-weight: 600;
+        color: #1f2937;
+    }
+    
+    .task-description em {
+        font-style: italic;
+        color: #4b5563;
+    }
+    
+    .task-description hr {
+        border: none;
+        border-top: 2px solid #e5e7eb;
+        margin: 20px 0;
+    }
+    
+    .task-description img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 6px;
+        margin: 15px 0;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+    
+    .task-description ul, .task-description ol {
+        margin: 15px 0;
+        padding-left: 25px;
+    }
+    
+    .task-description li {
+        margin-bottom: 8px;
+    }
+    
+    .task-description ul li {
+        list-style-type: disc;
+    }
+    
+    .task-description ol li {
+        list-style-type: decimal;
+    }
+    
+    /* Syntax highlighting for task description */
+    .task-description .hljs-keyword,
+    .task-description .hljs-selector-tag,
+    .task-description .hljs-literal,
+    .task-description .hljs-section,
+    .task-description .hljs-link {
+        color: #c678dd;
+    }
+    
+    .task-description .hljs-string,
+    .task-description .hljs-title,
+    .task-description .hljs-name,
+    .task-description .hljs-type,
+    .task-description .hljs-attribute,
+    .task-description .hljs-symbol,
+    .task-description .hljs-bullet,
+    .task-description .hljs-addition,
+    .task-description .hljs-variable,
+    .task-description .hljs-template-tag,
+    .task-description .hljs-template-variable {
+        color: #98c379;
+    }
+    
+    .task-description .hljs-comment,
+    .task-description .hljs-quote,
+    .task-description .hljs-deletion,
+    .task-description .hljs-meta {
+        color: #5c6370;
+        font-style: italic;
+    }
+    
+    .task-description .hljs-number,
+    .task-description .hljs-regexp,
+    .task-description .hljs-selector-id,
+    .task-description .hljs-selector-class {
+        color: #d19a66;
+    }
+    
+    .task-description .hljs-function .hljs-title,
+    .task-description .hljs-built_in,
+    .task-description .hljs-builtin-name {
+        color: #61afef;
+    }
+    
+    .task-progress-info {
+        background: #f3f4f6;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 13px;
+    }
+    
+    /* Custom scrollbar for task panel */
+    .task-panel-body::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .task-panel-body::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+    
+    .task-panel-body::-webkit-scrollbar-thumb {
+        background: #6366f1;
+        border-radius: 4px;
+    }
+    
+    .task-panel-body::-webkit-scrollbar-thumb:hover {
+        background: #4f46e5;
+    }
+    
+    /* Workspace Area - Code and Output */
+    .workspace-area {
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 20px 30px;
+        gap: 15px;
+        background: #f9fafb;
+    }
+    
+    /* Custom scrollbar for workspace area */
+    .workspace-area::-webkit-scrollbar {
+        width: 10px;
+    }
+    
+    .workspace-area::-webkit-scrollbar-track {
+        background: #e5e7eb;
+        border-radius: 5px;
+    }
+    
+    .workspace-area::-webkit-scrollbar-thumb {
+        background: #6366f1;
+        border-radius: 5px;
+    }
+    
+    .workspace-area::-webkit-scrollbar-thumb:hover {
+        background: #4f46e5;
+    }
+    
+    
+    /* Code editor section - UPDATED FOR GRID */
     .code-editor-section {
         background: #1e1e1e;
         border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         display: flex;
         flex-direction: column;
         overflow: hidden;
-        margin-bottom: 20px;
+        flex-shrink: 0;
         min-height: 350px;
-        max-height: 450px;
+        max-height: 500px;
     }
     
     .editor-header {
@@ -573,15 +930,46 @@
         background: #1e1e1e;
     }
     
-    /* Output and test results */
+    
+    /* Output and test results - UPDATED FOR GRID */
     .output-section, .test-results-section {
         background: white;
         border-radius: 8px;
         padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        max-height: 400px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        flex-shrink: 0;
+        max-height: 300px;
         overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    /* Custom scrollbar for output sections */
+    .output-section::-webkit-scrollbar,
+    .test-results-section::-webkit-scrollbar,
+    .output-box::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    
+    .output-section::-webkit-scrollbar-track,
+    .test-results-section::-webkit-scrollbar-track,
+    .output-box::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+    
+    .output-section::-webkit-scrollbar-thumb,
+    .test-results-section::-webkit-scrollbar-thumb,
+    .output-box::-webkit-scrollbar-thumb {
+        background: #6366f1;
+        border-radius: 4px;
+    }
+    
+    .output-section::-webkit-scrollbar-thumb:hover,
+    .test-results-section::-webkit-scrollbar-thumb:hover,
+    .output-box::-webkit-scrollbar-thumb:hover {
+        background: #4f46e5;
     }
     
     .section-title {
@@ -914,74 +1302,91 @@
     <!-- Right Panel: Exercise and Code Editor -->
     <div class="exercise-panel">
         <div class="exercise-content">
-            <!-- Exercise Header -->
-            <div class="exercise-header">
-                <div class="exercise-title">{{ exercise.title }}</div>
-                <div class="exercise-meta">
-                    <span class="difficulty-badge difficulty-{{ exercise.difficulty }}">
-                        {{ exercise.difficulty|upper }}
-                    </span>
-                    <span class="points-badge">
-                        <i class="fas fa-star"></i> {{ exercise.points }} points
-                    </span>
-                    {% if has_solved %}
-                    <span class="solved-badge">
-                        <i class="fas fa-check"></i> Solved
-                    </span>
+            <!-- Collapsible Task Panel -->
+            <div class="task-panel" id="task-panel">
+                <div class="task-panel-header" onclick="toggleTaskPanel()">
+                    <div class="task-panel-header-left">
+                        <h2 class="task-title-main">📝 {{ exercise.title }}</h2>
+                        <div class="task-badges">
+                            <span class="difficulty-badge difficulty-{{ exercise.difficulty }}">
+                                {{ exercise.difficulty }}
+                            </span>
+                            <span class="points-badge">
+                                ⭐ {{ exercise.points }} pts
+                            </span>
+                            {% if has_solved %}
+                            <span class="solved-badge">
+                                <i class="fas fa-check-circle"></i> Solved
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <button class="toggle-task-btn" type="button">
+                        <span class="arrow">▼</span>
+                        <span class="toggle-text">Hide Task</span>
+                    </button>
+                </div>
+                <div class="task-panel-body">
+                    {% if lesson_exercises %}
+                    <div class="task-progress-info">
+                        <span style="color: #374151; font-weight: 600;">
+                            <i class="fas fa-list-ol"></i> Exercise {{ current_exercise_index + 1 }} of {{ total_exercises_in_lesson }}
+                        </span>
+                        <span style="color: #6b7280;">
+                            {{ exercises_completed_count }} / {{ total_exercises_in_lesson }} completed
+                        </span>
+                    </div>
                     {% endif %}
-                </div>
-                {% if lesson_exercises %}
-                <div style="margin-top: 12px; padding: 10px; background: #f3f4f6; border-radius: 6px; display: flex; align-items: center; justify-content: space-between;">
-                    <span style="color: #374151; font-size: 14px; font-weight: 500;">
-                        <i class="fas fa-list-ol"></i> Exercise {{ current_exercise_index + 1 }} of {{ total_exercises_in_lesson }}
-                    </span>
-                    <span style="color: #6b7280; font-size: 13px;">
-                        {{ exercises_completed_count }} completed
-                    </span>
-                </div>
-                {% endif %}
-                <div class="exercise-description" style="margin-top: 15px;">
-                    {{ exercise.description|safe }}
-                </div>
-            </div>
-            
-            <!-- Code Editor -->
-            <div class="code-editor-section">
-                <div class="editor-header">
-                    <div class="editor-title">
-                        <i class="fab fa-python"></i> Python Code Editor
-                    </div>
-                    <div class="editor-actions">
-                        <button id="btn-run-code" class="run-button">
-                            <span id="run-icon">▶</span>
-                            <span id="run-text">Run Code</span>
-                        </button>
-                        <button id="btn-get-hint" class="hint-button" style="display: none;">
-                            <i class="fas fa-lightbulb"></i> Get Hint
-                        </button>
-                        <button id="btn-code-review" class="review-button" style="display: none;">
-                            <i class="fas fa-star"></i> Get Review
-                        </button>
+                    <div class="task-description">
+                        {% if exercise_description_html %}
+                            {{ exercise_description_html|safe }}
+                        {% else %}
+                            {{ exercise.description|safe }}
+                        {% endif %}
                     </div>
                 </div>
-                <div id="code-editor">{{ starter_code }}</div>
             </div>
             
-            <!-- Output Section -->
-            <div class="output-section" id="output-section" style="display: none;">
-                <div class="section-title">
-                    <i class="fas fa-terminal"></i> Output
+            <!-- Workspace Area: Code Editor and Output -->
+            <div class="workspace-area">
+                <!-- Code Editor -->
+                <div class="code-editor-section">
+                    <div class="editor-header">
+                        <div class="editor-title">
+                            <i class="fab fa-python"></i> Python Code Editor
+                        </div>
+                        <div class="editor-actions">
+                            <button id="btn-run-code" class="run-button">
+                                <span id="run-icon">▶</span>
+                                <span id="run-text">Run Code</span>
+                            </button>
+                            <button id="btn-get-hint" class="hint-button" style="display: none;">
+                                <i class="fas fa-lightbulb"></i> Get Hint
+                            </button>
+                            <button id="btn-code-review" class="review-button" style="display: none;">
+                                <i class="fas fa-star"></i> Get Review
+                            </button>
+                        </div>
+                    </div>
+                    <div id="code-editor">{{ starter_code }}</div>
                 </div>
-                <div id="execution-output" class="output-box"></div>
-            </div>
-            
-            <!-- Test Results -->
-            <div class="test-results-section" id="test-results-section" style="display: none;">
-                <div class="section-title">
-                    <i class="fas fa-check-circle"></i> Test Results
+                
+                <!-- Output Section -->
+                <div class="output-section" id="output-section" style="display: none;">
+                    <div class="section-title">
+                        <i class="fas fa-terminal"></i> Output
+                    </div>
+                    <div id="execution-output" class="output-box"></div>
                 </div>
-                <div id="test-results-container"></div>
-                <div id="test-summary"></div>
+                
+                <!-- Test Results -->
+                <div class="test-results-section" id="test-results-section" style="display: none;">
+                    <div class="section-title">
+                        <i class="fas fa-check-circle"></i> Test Results
+                    </div>
+                    <div id="test-results-container"></div>
+                    <div id="test-summary"></div>
+                </div>
             </div>
         </div>
         
@@ -1123,6 +1528,28 @@ document.addEventListener('mouseup', function() {
 
 // Global variable to store last execution result
 let lastExecutionResult = null;
+
+// Toggle Task Panel
+function toggleTaskPanel() {
+    const taskPanel = document.getElementById('task-panel');
+    const toggleBtn = taskPanel.querySelector('.toggle-task-btn');
+    const toggleText = toggleBtn.querySelector('.toggle-text');
+    
+    taskPanel.classList.toggle('collapsed');
+    
+    if (taskPanel.classList.contains('collapsed')) {
+        toggleText.textContent = 'Show Task';
+    } else {
+        toggleText.textContent = 'Hide Task';
+    }
+    
+    // Re-layout Monaco editor after animation
+    setTimeout(() => {
+        if (typeof editor !== 'undefined') {
+            editor.layout();
+        }
+    }, 350);
+}
 
 // Hint toggle
 function toggleHint(index) {

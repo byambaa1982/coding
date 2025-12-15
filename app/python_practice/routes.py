@@ -120,6 +120,11 @@ def view_exercise(exercise_id):
         if lesson_content.content:
             lesson_content_html = render_markdown(lesson_content.content)
     
+    # Render exercise description as markdown
+    exercise_description_html = None
+    if exercise.description:
+        exercise_description_html = render_markdown(exercise.description)
+    
     return render_template('python_practice/exercise.html',
                          exercise=exercise,
                          enrollment=enrollment,
@@ -138,6 +143,7 @@ def view_exercise(exercise_id):
                          exercise_completion_map=exercise_completion_map,
                          lesson_content=lesson_content,
                          lesson_content_html=lesson_content_html,
+                         exercise_description_html=exercise_description_html,
                          course_id=course_id or exercise.tutorial_id,
                          lesson_id_param=lesson_id or exercise.lesson_id)
 
