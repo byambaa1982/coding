@@ -459,6 +459,94 @@ def edit_exercise(course_id, exercise_id):
     return render_template('instructor/exercise_form.html', form=form, course=course, exercise=exercise, mode='edit')
 
 
+@instructor_bp.route('/courses/<int:course_id>/exercises/test', methods=['POST'])
+@login_required
+@instructor_required
+def test_exercise(course_id):
+    """Test exercise solution code against test cases in real-time."""
+    try:
+        course = NewTutorial.query.get_or_404(course_id)
+        
+        if not can_edit_course(current_user, course):
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'No data provided'})
+            
+        solution_code = data.get('solution_code', '')
+        test_cases_str = data.get('test_cases', '')
+        exercise_type = data.get('exercise_type', 'python')
+        
+        # Validate inputs
+        if not solution_code or not solution_code.strip():
+            return jsonify({'success': False, 'error': 'Solution code is required'})
+        
+        if not test_cases_str or not test_cases_str.strip():
+            return jsonify({'success': False, 'error': 'Test cases are required'})
+        
+        # Parse test cases
+        try:
+            test_cases = json.loads(test_cases_str)
+            if not isinstance(test_cases, list):
+                return jsonify({'success': False, 'error': 'Test cases must be a JSON array'})
+        except json.JSONDecodeError as e:
+            return jsonify({'success': False, 'error': f'Invalid JSON in test cases: {str(e)}'})
+        
+        # Execute code based on type
+        if exercise_type == 'python':
+            from app.python_practice.validators import validate_python_code
+            from app.python_practice.executor import execute_python_code
+            
+            # Validate code
+            is_valid, error_msg = validate_python_code(solution_code)
+            if not is_valid:
+                return jsonify({
+                    'success': False,
+                    'error': error_msg,
+                    'validation_failed': True
+                })
+            
+            # Execute code with test cases
+            result = execute_python_code(solution_code, test_cases, timeout=10)
+            
+            return jsonify({
+                'success': True,
+                'result': {
+                    'status': result.get('status'),
+                    'output': result.get('output', ''),
+                    'error': result.get('error', ''),
+                    'test_results': result.get('test_results', []),
+                    'tests_passed': result.get('tests_passed', 0),
+                    'tests_failed': result.get('tests_failed', 0),
+                    'execution_time_ms': result.get('execution_time_ms', 0),
+                    'total_tests': len(test_cases)
+                }
+            })
+        
+        elif exercise_type == 'sql':
+            # TODO: Add SQL testing support
+            return jsonify({
+                'success': False,
+                'error': 'SQL testing is not yet implemented'
+            })
+        
+        else:
+            return jsonify({
+                'success': False,
+                'error': f'Unsupported exercise type: {exercise_type}'
+            })
+            
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Error in test_exercise: {error_details}")
+        return jsonify({
+            'success': False,
+            'error': f'Server error: {str(e)}'
+        })
+
+
 @instructor_bp.route('/courses/<int:course_id>/exercises/<int:exercise_id>/delete', methods=['POST'])
 @login_required
 @instructor_required
