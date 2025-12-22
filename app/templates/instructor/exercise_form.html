@@ -47,186 +47,233 @@
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
-    <div class="max-w-7xl mx-auto">
+    <div class="max-w-5xl mx-auto">
         <!-- Header -->
-        <div class="mb-6">
-            <h2 class="text-3xl font-bold text-gray-900">{{ 'Create New Exercise' if mode == 'create' else 'Edit Exercise' }}</h2>
-            <p class="text-gray-600 text-sm mt-1">Course: {{ course.title }}</p>
+        <div class="mb-6 flex items-center justify-between">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-900">{{ 'Create New Exercise' if mode == 'create' else 'Edit Exercise' }}</h2>
+                <p class="text-gray-600 text-sm mt-1">Course: {{ course.title }}</p>
+            </div>
+            <a href="{{ url_for('instructor.course_detail', course_id=course.id) }}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                <svg class="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Back to Course
+            </a>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Left Column: Form -->
-            <div class="lg:col-span-2">
-                <div class="bg-white rounded-lg shadow">
-                    <div class="px-6 py-4 border-b border-gray-200">
-                        <h3 class="text-xl font-semibold text-gray-900">Exercise Details</h3>
-                    </div>
-                    <div class="p-6">
-                        <!-- Display Form Errors -->
-                        {% if form.errors %}
-                        <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                            <h3 class="text-sm font-semibold text-red-800 mb-2">Please fix the following errors:</h3>
-                            <ul class="list-disc list-inside text-sm text-red-700">
-                                {% for field, errors in form.errors.items() %}
-                                    {% for error in errors %}
-                                        <li>{{ field }}: {{ error }}</li>
-                                    {% endfor %}
-                                {% endfor %}
-                            </ul>
-                        </div>
-                        {% endif %}
-                        
-                        <form method="POST" action="" class="space-y-6">
-                            {{ form.hidden_tag() }}
-                            
+        <!-- Single Unified Form -->
+        <div class="bg-white rounded-lg shadow-lg">
+            <div class="p-6">
+                <!-- Display Form Errors -->
+                {% if form.errors %}
+                <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <h3 class="text-sm font-semibold text-red-800 mb-2">⚠ Please fix the following errors:</h3>
+                    <ul class="list-disc list-inside text-sm text-red-700">
+                        {% for field, errors in form.errors.items() %}
+                            {% for error in errors %}
+                                <li>{{ field }}: {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                
+                <form method="POST" action="" class="space-y-8">
+                    {{ form.hidden_tag() }}
+                    
+                    <!-- Section 1: Basic Information -->
+                    <div class="border-l-4 border-blue-500 pl-4">
+                        <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                            <span class="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm mr-3">1</span>
+                            Basic Information
+                        </h3>
+                        <div class="space-y-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.title.label.text }}</label>
-                                {{ form.title(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500") }}
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">{{ form.title.label.text }}</label>
+                                {{ form.title(class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg") }}
                                 {% if form.title.errors %}
                                     <p class="mt-1 text-sm text-red-600">{{ form.title.errors[0] }}</p>
                                 {% endif %}
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.description.label.text }}</label>
-                                {{ form.description(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500", rows="4") }}
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">{{ form.description.label.text }}</label>
+                                {{ form.description(class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent", rows="4") }}
                                 {% if form.description.errors %}
                                     <p class="mt-1 text-sm text-red-600">{{ form.description.errors[0] }}</p>
                                 {% else %}
-                                    <p class="mt-1 text-sm text-gray-500">Instructions for students</p>
+                                    <p class="mt-1 text-xs text-gray-500">📝 Instructions shown to students</p>
                                 {% endif %}
                             </div>
 
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.lesson_id.label.text }}</label>
-                                {{ form.lesson_id(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500") }}
-                                {% if form.lesson_id.errors %}
-                                    <p class="mt-1 text-sm text-red-600">{{ form.lesson_id.errors[0] }}</p>
-                                {% else %}
-                                    <p class="mt-1 text-sm text-gray-500">Link this exercise to a specific lesson (optional)</p>
-                                {% endif %}
-                            </div>
-
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.exercise_type.label.text }}</label>
-                                    {{ form.exercise_type(id="exercise_type", class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500") }}
-                                    {% if form.exercise_type.errors %}
-                                        <p class="mt-1 text-xs text-red-600">{{ form.exercise_type.errors[0] }}</p>
-                                    {% endif %}
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">{{ form.exercise_type.label.text }}</label>
+                                    {{ form.exercise_type(id="exercise_type", class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.difficulty.label.text }}</label>
-                                    {{ form.difficulty(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500") }}
-                                    {% if form.difficulty.errors %}
-                                        <p class="mt-1 text-xs text-red-600">{{ form.difficulty.errors[0] }}</p>
-                                    {% endif %}
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">{{ form.difficulty.label.text }}</label>
+                                    {{ form.difficulty(class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.points.label.text }}</label>
-                                    {{ form.points(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500") }}
-                                    {% if form.points.errors %}
-                                        <p class="mt-1 text-xs text-red-600">{{ form.points.errors[0] }}</p>
-                                    {% endif %}
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">{{ form.points.label.text }}</label>
+                                    {{ form.points(class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.order_index.label.text }}</label>
-                                    {{ form.order_index(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500") }}
-                                    {% if form.order_index.errors %}
-                                        <p class="mt-1 text-xs text-red-600">{{ form.order_index.errors[0] }}</p>
-                                    {% endif %}
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">{{ form.order_index.label.text }}</label>
+                                    {{ form.order_index(class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
                                 </div>
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.starter_code.label.text }}</label>
-                                {{ form.starter_code(class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-blue-500", rows="8") }}
-                                <p class="mt-1 text-sm text-gray-500">Initial code template shown to students</p>
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.solution_code.label.text }}</label>
-                                {{ form.solution_code(class="hidden", id="solution_code_input") }}
-                                <textarea id="solution_code_editor"></textarea>
-                                <p class="mt-1 text-sm text-gray-500">Reference solution (not shown to students)</p>
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.test_cases.label.text }}</label>
-                                {{ form.test_cases(class="hidden", id="test_cases_input") }}
-                                <textarea id="test_cases_editor"></textarea>
-                                <p class="mt-1 text-sm text-gray-500">JSON format: [{"input": "5", "expected": "25", "description": "Square of 5", "function_name": "square"}]</p>
-                            </div>
-
-                            <!-- Test Button -->
-                            <div class="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                <button type="button" id="test-solution-btn" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold flex items-center gap-2 transition">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                    Test Solution
-                                </button>
-                                <p class="text-sm text-gray-600">Test your solution code against test cases before saving</p>
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.hints.label.text }}</label>
-                                {{ form.hints(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500", rows="4") }}
-                                <p class="mt-1 text-sm text-gray-500">JSON array: ["Hint 1", "Hint 2"]</p>
-                            </div>
-
-                            <!-- SQL Fields -->
-                            <div id="sql-fields" class="space-y-4 hidden">
-                                <h3 class="text-lg font-semibold text-gray-900">SQL-Specific Fields</h3>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.database_schema.label.text }}</label>
-                                    {{ form.database_schema(class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-blue-500", rows="6") }}
-                                    <p class="mt-1 text-sm text-gray-500">DDL statements to create tables</p>
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.sample_data.label.text }}</label>
-                                    {{ form.sample_data(class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-blue-500", rows="6") }}
-                                    <p class="mt-1 text-sm text-gray-500">INSERT statements for sample data</p>
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.expected_output.label.text }}</label>
-                                    {{ form.expected_output(class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-blue-500", rows="4") }}
-                                    <p class="mt-1 text-sm text-gray-500">Expected query result in JSON format</p>
-                                </div>
-                            </div>
-
-                            <div class="flex gap-3 pt-4 border-t">
-                                <button type="submit" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold">
-                                    {{ 'Create Exercise' if mode == 'create' else 'Update Exercise' }}
-                                </button>
-                                <a href="{{ url_for('instructor.course_detail', course_id=course.id) }}" class="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Cancel</a>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Column: Test Results Panel -->
-            <div class="lg:col-span-1">
-                <div class="bg-white rounded-lg shadow sticky top-4">
-                    <div class="px-6 py-4 border-b border-gray-200">
-                        <h3 class="text-xl font-semibold text-gray-900">Test Results</h3>
-                    </div>
-                    <div class="p-6">
-                        <div id="test-results-container">
-                            <div class="text-center text-gray-400 py-8">
-                                <svg class="w-16 h-16 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
-                                </svg>
-                                <p class="text-sm">Click "Test Solution" to run tests</p>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">{{ form.lesson_id.label.text }}</label>
+                                {{ form.lesson_id(class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                                <p class="mt-1 text-xs text-gray-500">🔗 Optional: Link to a specific lesson</p>
                             </div>
                         </div>
                     </div>
-                </div>
+
+                    <!-- Section 2: Code & Tests -->
+                    <div class="border-l-4 border-green-500 pl-4">
+                        <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                            <span class="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm mr-3">2</span>
+                            Code & Test Cases
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                <!-- Starter Code -->
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                        {{ form.starter_code.label.text }}
+                                        <span class="text-xs font-normal text-gray-500">(shown to students)</span>
+                                    </label>
+                                    {{ form.starter_code(class="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent", rows="10", placeholder="# Template code for students\ndef solution():\n    pass") }}
+                                </div>
+
+                                <!-- Solution Code -->
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                        {{ form.solution_code.label.text }}
+                                        <span class="text-xs font-normal text-gray-500">(reference only)</span>
+                                    </label>
+                                    {{ form.solution_code(class="hidden", id="solution_code_input") }}
+                                    <textarea id="solution_code_editor"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Test Cases / Expected Output -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    Expected Output
+                                    <span class="text-xs font-normal text-gray-500">(what should the code print?)</span>
+                                </label>
+                                <textarea id="expected_output_editor" class="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent" rows="6" placeholder="Example: If code is print(&quot;Hello&quot;), enter: Hello&#10;NOT: &quot;Hello&quot; (no quotes!)&#10;&#10;For multiple lines:&#10;Line 1&#10;Line 2">{{ form.expected_output.data if form.expected_output.data else '' }}</textarea>
+                                {{ form.expected_output(class="hidden", id="expected_output_input") }}
+                                <p class="mt-1 text-xs text-red-600 font-semibold">⚠️ Enter the actual output WITHOUT quotes! For print("HI"), enter: HI</p>
+                                
+                                <!-- Hidden field for actual test cases (auto-generated) -->
+                                {{ form.test_cases(class="hidden", id="test_cases_input") }}
+                                
+                                <!-- Advanced mode toggle -->
+                                <details class="mt-2">
+                                    <summary class="text-xs text-blue-600 cursor-pointer hover:text-blue-800">🔧 Advanced: Edit JSON Test Cases</summary>
+                                    <div class="mt-2">
+                                        <textarea id="test_cases_editor"></textarea>
+                                        <p class="mt-1 text-xs text-gray-500">Only edit this if you need custom test cases</p>
+                                    </div>
+                                </details>
+                            </div>
+
+                            <!-- Test Results Area (Initially Hidden) -->
+                            <div id="test-results-area" class="hidden">
+                                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50">
+                                    <div id="test-results-container">
+                                        <div class="text-center text-gray-400 py-8">
+                                            <svg class="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                            </svg>
+                                            <p class="text-sm">Test results will appear here</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Test Button - Prominent -->
+                            <div class="bg-gradient-to-r from-blue-50 to-green-50 border-2 border-blue-300 rounded-lg p-5">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h4 class="font-bold text-gray-900 mb-1">🧪 Test Your Solution</h4>
+                                        <p class="text-sm text-gray-600">Run your solution code against test cases before saving</p>
+                                    </div>
+                                    <button type="button" id="test-solution-btn" class="px-8 py-4 bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-lg hover:from-blue-700 hover:to-green-700 font-bold text-lg flex items-center gap-3 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        Test Solution
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Additional Options -->
+                    <div class="border-l-4 border-purple-500 pl-4">
+                        <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                            <span class="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm mr-3">3</span>
+                            Additional Options
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">{{ form.hints.label.text }}</label>
+                                {{ form.hints(class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent", rows="3", placeholder='["Think about using a loop", "Remember to return the result"]') }}
+                                <p class="mt-1 text-xs text-gray-500">💡 JSON array format: ["Hint 1", "Hint 2"]</p>
+                            </div>
+
+                            <!-- SQL Fields (Collapsible) -->
+                            <div id="sql-fields" class="hidden">
+                                <details class="border border-orange-300 rounded-lg bg-orange-50">
+                                    <summary class="px-4 py-3 cursor-pointer font-semibold text-gray-900 hover:bg-orange-100 rounded-lg">
+                                        🗄️ SQL-Specific Fields
+                                    </summary>
+                                    <div class="p-4 space-y-4">
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-700 mb-2">{{ form.database_schema.label.text }}</label>
+                                            {{ form.database_schema(class="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-orange-500", rows="6", placeholder="CREATE TABLE users (\n  id INTEGER PRIMARY KEY,\n  name TEXT\n);") }}
+                                            <p class="mt-1 text-xs text-gray-500">DDL statements to create tables</p>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-700 mb-2">{{ form.sample_data.label.text }}</label>
+                                            {{ form.sample_data(class="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-orange-500", rows="6", placeholder="INSERT INTO users VALUES (1, 'Alice');\nINSERT INTO users VALUES (2, 'Bob');") }}
+                                            <p class="mt-1 text-xs text-gray-500">INSERT statements for sample data</p>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-700 mb-2">{{ form.expected_output.label.text }}</label>
+                                            {{ form.expected_output(class="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-orange-500", rows="4", placeholder='[{"id": 1, "name": "Alice"}]') }}
+                                            <p class="mt-1 text-xs text-gray-500">Expected query result in JSON format</p>
+                                        </div>
+                                    </div>
+                                </details>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex gap-3 pt-6 pb-2 border-t-2 border-gray-200">
+                        <button type="submit" class="flex-1 px-8 py-4 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg hover:from-green-700 hover:to-blue-700 font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition">
+                            <svg class="w-6 h-6 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            {{ 'Create Exercise' if mode == 'create' else 'Update Exercise' }}
+                        </button>
+                        <a href="{{ url_for('instructor.course_detail', course_id=course.id) }}" class="px-8 py-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-semibold transition">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -267,7 +314,7 @@ document.addEventListener('DOMContentLoaded', function() {
         solutionInput.value = solutionEditor.getValue();
     });
     
-    // Test Cases Editor
+    // Test Cases Editor (Advanced mode - hidden by default)
     const testCasesTextarea = document.getElementById('test_cases_editor');
     testCasesEditor = CodeMirror.fromTextArea(testCasesTextarea, {
         mode: 'application/json',
@@ -289,6 +336,38 @@ document.addEventListener('DOMContentLoaded', function() {
     // Sync editor with hidden input
     testCasesEditor.on('change', function() {
         testCasesInput.value = testCasesEditor.getValue();
+    });
+    
+    // Auto-generate test cases before form submission
+    const form = document.querySelector('form');
+    const expectedOutputEditor = document.getElementById('expected_output_editor');
+    const expectedOutputInput = document.getElementById('expected_output_input');
+    
+    // Sync expected output editor with hidden field
+    expectedOutputEditor.addEventListener('input', function() {
+        expectedOutputInput.value = this.value;
+    });
+    
+    // Trigger initial sync
+    if (expectedOutputEditor.value) {
+        expectedOutputInput.value = expectedOutputEditor.value;
+    }
+    
+    form.addEventListener('submit', function(e) {
+        const expectedOutput = expectedOutputEditor.value;
+        
+        // Save expected output to hidden field
+        expectedOutputInput.value = expectedOutput;
+        
+        // If expected output is set and test_cases is empty, auto-generate
+        if (expectedOutput.trim() && !testCasesInput.value.trim()) {
+            const autoTestCases = [{
+                "type": "assert_output",
+                "expected_output": expectedOutput,
+                "description": "Test output matches expected"
+            }];
+            testCasesInput.value = JSON.stringify(autoTestCases);
+        }
     });
     
     // Handle exercise type change
@@ -320,24 +399,48 @@ document.addEventListener('DOMContentLoaded', function() {
 async function testSolution() {
     const btn = document.getElementById('test-solution-btn');
     const resultsContainer = document.getElementById('test-results-container');
+    const resultsArea = document.getElementById('test-results-area');
     const exerciseType = document.getElementById('exercise_type').value;
     
     // Get code from editors
     const solutionCode = solutionEditor.getValue();
-    const testCasesStr = testCasesEditor.getValue();
+    const expectedOutputElement = document.getElementById('expected_output_editor');
+    const expectedOutput = expectedOutputElement ? expectedOutputElement.value : '';
+    
+    console.log('Expected Output Value:', expectedOutput);
+    console.log('Expected Output Length:', expectedOutput.length);
     
     // Validate inputs
     if (!solutionCode.trim()) {
         showError('Solution code is required');
+        resultsArea.classList.remove('hidden');
+        resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         return;
     }
     
-    if (!testCasesStr.trim()) {
-        showError('Test cases are required');
+    if (!expectedOutput.trim()) {
+        showError('Expected output is required - please enter what the code should print');
+        resultsArea.classList.remove('hidden');
+        resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         return;
     }
     
-    // Show loading state
+    // Auto-generate test case from expected output
+    const testCases = [{
+        "type": "assert_output",
+        "expected": expectedOutput.trim(),
+        "description": "Test output matches expected"
+    }];
+    
+    console.log('Generated test cases:', testCases);
+    
+    // Also save to hidden field for form submission
+    document.getElementById('test_cases_input').value = JSON.stringify(testCases);
+    
+    const testCasesStr = JSON.stringify(testCases);
+    
+    // Show results area and loading state
+    resultsArea.classList.remove('hidden');
     btn.disabled = true;
     btn.innerHTML = '<div class="spinner mr-2"></div><span>Testing...</span>';
     
@@ -347,6 +450,11 @@ async function testSolution() {
             <p class="text-sm text-gray-600 pulse-animation">Running tests...</p>
         </div>
     `;
+    
+    // Scroll to results
+    setTimeout(() => {
+        resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
     
     try {
         const url = '{{ url_for("instructor.test_exercise", course_id=course.id) }}';
@@ -391,7 +499,7 @@ async function testSolution() {
     } finally {
         btn.disabled = false;
         btn.innerHTML = `
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
